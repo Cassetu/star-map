@@ -2065,13 +2065,6 @@ function spendResources(cost) {
     return true;
 }
 
-if (!hasResources(cost)) return false;
-game.resources.food -= (cost.food || 0);
-game.resources.metal -= (cost.metal || 0);
-game.resources.energy -= (cost.energy || 0);
-return true;
-}
-
 
     function startCityPlacement() {
 if (!hasResources({ food: 200, metal: 200, energy: 100 })) {
