@@ -192,7 +192,7 @@ const game = {
 
 let cityIdCounter = 0, roadIdCounter = 0, tribalIdCounter = 0, gameLoop;
 let usedNames = [];
-let mapZoom = 0.5;
+let mapZoom = 1.0;
 let mapPanX = 0;
 let mapPanY = 0;
 let isDragging = false;
@@ -1928,7 +1928,7 @@ AudioManager.playSFX('sfx-city-build', 0.6);
         cityEl.style.left = `${x}%`;
         cityEl.style.top = `${y}%`;
         cityEl.style.transform = 'translate(-50%, -50%)';
-        cityEl.innerHTML = `<div class="city-label">${city.name}</div><div class="city-icon"></div><div class="population-bar"><div class="population-fill" style="width: 20%"></div></div>`;
+        cityEl.innerHTML = `<div class="city-label">${city.name}</div><div class="population-bar"><div class="population-fill" style="width: 20%"></div></div>`;
         cityEl.onclick = (e) => {
 e.stopPropagation();
 if (game.buildingRoad && game.roadStartCity && game.roadStartCity.id !== city.id) {
@@ -3072,6 +3072,7 @@ function updateZoom(delta) {
 
 function applyMapTransform() {
     const planetView = document.getElementById('planet-view');
+    planetView.style.transition = 'none';
     planetView.style.transform = `translate(${mapPanX}px, ${mapPanY}px) scale(${mapZoom})`;
 }
 
@@ -3099,12 +3100,16 @@ function updateMinimap() {
 
     const mainGame = document.getElementById('main-game');
     const rect = mainGame.getBoundingClientRect();
+    const planetView = document.getElementById('planet-view');
     const viewport = minimap.querySelector('.minimap-viewport');
 
-    const viewWidth = (rect.width / (rect.width * 20 * mapZoom)) * 100;
-    const viewHeight = (rect.height / (rect.height * 20 * mapZoom)) * 100;
-    const viewX = (-mapPanX / (rect.width * 20 * mapZoom)) * 100;
-    const viewY = (-mapPanY / (rect.height * 20 * mapZoom)) * 100;
+    const planetWidth = rect.width * 10; 
+    const planetHeight = rect.height * 10;
+    
+    const viewWidth = (rect.width / planetWidth) * 100;
+    const viewHeight = (rect.height / planetHeight) * 100;
+    const viewX = (-mapPanX / planetWidth) * 100;
+    const viewY = (-mapPanY / planetHeight) * 100;
 
     viewport.style.left = `${viewX}%`;
     viewport.style.top = `${viewY}%`;
@@ -3851,6 +3856,24 @@ mainGame.addEventListener('wheel', (e) => {
     e.preventDefault();
     updateZoom(e.deltaY > 0 ? -0.05 : 0.05);
 }, { passive: false });
+
+document.getElementById('minimap').addEventListener('click', (e) => {
+    const minimap = document.getElementById('minimap');
+    const rect = minimap.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
+    
+    const mainGame = document.getElementById('main-game');
+    const gameRect = mainGame.getBoundingClientRect();
+    const planetWidth = gameRect.width * 10;
+    const planetHeight = gameRect.height * 10;
+    
+    mapPanX = -(x * planetWidth) + (gameRect.width / 2);
+    mapPanY = -(y * planetHeight) + (gameRect.height / 2);
+    
+    applyMapTransform();
+    updateMinimap();
+});
 
 document.getElementById('retreat-slider').addEventListener('input', (e) => {
 game.retreatThreshold = parseInt(e.target.value);
