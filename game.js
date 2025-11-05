@@ -141,9 +141,9 @@ apply: () => {
     id: 'tribute',
     text: 'Pay us 500 resources as compensation for this war.',
     consequence: 'You will lose 500 resources',
-    check: () => game.resources >= 500,
+    check: () => hasResources(500),
     apply: () => {
-        game.resources -= 500;
+        spendResources(500);
         addMessage('Paid 500 resource tribute', 'warning');
     }
 },
@@ -265,11 +265,11 @@ AudioManager.playSFX('sfx-button-click', 0.3);
     }
 
 function canCallReinforcements() {
-if (game.resources < 300) return false;
-const closestCity = getClosestPlayerCity(game.currentBattle);
-if (!closestCity) return false;
-const connectedCities = getConnectedCityCount(closestCity);
-return connectedCities > 0;
+    if (!hasResources(300)) return false;
+        const closestCity = getClosestPlayerCity(game.currentBattle);
+    if (!closestCity) return false;
+        const connectedCities = getConnectedCityCount(closestCity);
+        return connectedCities > 0;
 }
 
 function calculateBattlePrediction(tribal) {
@@ -514,21 +514,21 @@ units.forEach((unit, index) => {
 
 
 function callReinforcements() {
-if (!canCallReinforcements()) {
-    addMessage('No reinforcements available!', 'warning');
-    return;
-}
+    if (!canCallReinforcements()) {
+        addMessage('No reinforcements available!', 'warning');
+        return;
+    }
 
-const closestCity = getClosestPlayerCity(game.currentBattle);
+    const closestCity = getClosestPlayerCity(game.currentBattle);
 
-game.resources -= 300;
-closestCity.stationedUnits.infantry += 1;
-closestCity.stationedUnits.cavalry += 1;
+    spendResources(300);
+    closestCity.stationedUnits.infantry += 1;
+    closestCity.stationedUnits.cavalry += 1;
 
-addMessage('Reinforcements arriving!', 'success');
-AudioManager.playSFX('sfx-success', 0.6);
+    addMessage('Reinforcements arriving!', 'success');
+    AudioManager.playSFX('sfx-success', 0.6);
 
-game.ddrSequence.push('ArrowUp', 'ArrowRight');
+    game.ddrSequence.push('ArrowUp', 'ArrowRight');
 }
 
 
@@ -635,36 +635,36 @@ return { foodBonus, metalBonus, energyBonus, growthPenalty, nearbyFeatures };
     }
 
 function initiatePeaceTalks() {
-if (game.resources < 1000) {
-    addMessage('Need 1000 resources to begin peace talks!', 'warning');
+    if (!hasResources(1000)) {
+        addMessage('Need 1000 resources to begin peace talks!', 'warning');
+        return;
+    }
+
+    spendResources(1000);
+    game.peaceTalksActive = true;
+    game.peaceTalksTimer = 0;
+    game.peaceDemandsMet = 0;
+    game.peaceDemands = [];
+    game.lastShownDemandIndex = -1;
+
+    const availableDemands = PEACE_DEMANDS.filter(d => d.check());
+
+    if (availableDemands.length === 0) {
+    addMessage('No valid peace demands available! Treaty automatically accepted.', 'success');
+    game.tribalRelation = 'neutral';
+    game.tribalReputation = 50;
+    game.peaceTreatyCooldown = 700;
     return;
-}
+    }
 
-game.resources -= 1000;
-game.peaceTalksActive = true;
-game.peaceTalksTimer = 0;
-game.peaceDemandsMet = 0;
-game.peaceDemands = [];
-game.lastShownDemandIndex = -1;
+    for (let i = 0; i < 3 && availableDemands.length > 0; i++) {
+        const index = Math.floor(Math.random() * availableDemands.length);
+        game.peaceDemands.push(availableDemands[index]);
+        availableDemands.splice(index, 1);
+    }
 
-const availableDemands = PEACE_DEMANDS.filter(d => d.check());
-
-if (availableDemands.length === 0) {
-addMessage('No valid peace demands available! Treaty automatically accepted.', 'success');
-game.tribalRelation = 'neutral';
-game.tribalReputation = 50;
-game.peaceTreatyCooldown = 700;
-return;
-}
-
-for (let i = 0; i < 3 && availableDemands.length > 0; i++) {
-    const index = Math.floor(Math.random() * availableDemands.length);
-    game.peaceDemands.push(availableDemands[index]);
-    availableDemands.splice(index, 1);
-}
-
-addMessage('Peace negotiations begun! Tribes will present demands over 3 years.', 'info');
-AudioManager.playSFX('sfx-success', 0.5);
+    addMessage('Peace negotiations begun! Tribes will present demands over 3 years.', 'info');
+    AudioManager.playSFX('sfx-success', 0.5);
 }
 
 
@@ -1043,9 +1043,14 @@ if (Math.floor(game.year * 10) % 10 === 0) {
         updateHabitableZone();
 
         if (game.spaceportBuilding) {
-            if (game.resources >= 5) {
-                game.resources -= 5;
-                game.spaceportProgress += 0.5;
+            const totalRes = game.resources.food + game.resources.metal + game.resources.energy;
+            if (totalRes >= 5) {
+                const foodCost = Math.min(game.resources.food, 1.67);
+                const metalCost = Math.min(game.resources.metal - foodCost, 1.67);
+                const energyCost = 5 - foodCost - metalCost;
+                game.resources.food -= foodCost;
+                game.resources.metal -= metalCost;
+                game.resources.energy -= energyCost;
                 if (game.spaceportProgress >= 100) {
                     victory();
                     return;
@@ -2035,24 +2040,28 @@ return game.resources.food >= (cost.food || 0) &&
 }
 
 function spendResources(cost) {
-if (typeof cost === 'number') {
-    const total = game.resources.food + game.resources.metal + game.resources.energy;
-    if (total < cost) return false;
+    if (typeof cost === 'number') {
+        let remaining = cost;
+        const toSpend = { food: 0, metal: 0, energy: 0 };
 
-    let remaining = cost;
-    const toSpend = { food: 0, metal: 0, energy: 0 };
+        ['food', 'metal', 'energy'].forEach(type => {
+            if (remaining > 0) {
+                const spend = Math.min(game.resources[type], remaining);
+                toSpend[type] = spend;
+                remaining -= spend;
+            }
+        });
 
-    ['food', 'metal', 'energy'].forEach(type => {
-        if (remaining > 0) {
-            const spend = Math.min(game.resources[type], remaining);
-            toSpend[type] = spend;
-            remaining -= spend;
-        }
-    });
+        game.resources.food -= toSpend.food;
+        game.resources.metal -= toSpend.metal;
+        game.resources.energy -= toSpend.energy;
+        return true;
+    }
 
-    game.resources.food -= toSpend.food;
-    game.resources.metal -= toSpend.metal;
-    game.resources.energy -= toSpend.energy;
+    if (!hasResources(cost)) return false;
+    game.resources.food -= (cost.food || 0);
+    game.resources.metal -= (cost.metal || 0);
+    game.resources.energy -= (cost.energy || 0);
     return true;
 }
 
@@ -2778,21 +2787,21 @@ if (game.commanderXP >= xpNeeded) {
 }
 
 function sendScout() {
-if (!game.currentBattle) return;
-if (game.resources < 50) {
-    addMessage('Need 50 resources for scouting!', 'warning');
-    return;
-}
+    if (!game.currentBattle) return;
+    if (!hasResources(50)) {
+        addMessage('Need 50 resources for scouting!', 'warning');
+        return;
+    }
 
-game.resources -= 50;
-game.scoutedTribalCities.push(game.currentBattle.id);
+    spendResources(50);
+    game.scoutedTribalCities.push(game.currentBattle.id);
 
-addMessage(`Scouts reveal ${game.currentBattle.name} forces!`, 'success');
-AudioManager.playSFX('sfx-success', 0.5);
+    addMessage(`Scouts reveal ${game.currentBattle.name} forces!`, 'success');
+    AudioManager.playSFX('sfx-success', 0.5);
 
-updateTribalUnitIcons(game.currentBattle);
+    updateTribalUnitIcons(game.currentBattle);
 
-openBattlePlanningScreen(game.currentBattle);
+    openBattlePlanningScreen(game.currentBattle);
 }
 
 
@@ -3543,7 +3552,8 @@ AudioManager.playSFX('sfx-alert', 0.7);
     function updateSpaceportPanel() {
         const totalPop = game.cities.reduce((sum, c) => sum + Math.floor(c.population), 0);
         document.getElementById('sp-pop-current').textContent = totalPop;
-        document.getElementById('sp-res-current').textContent = Math.floor(game.resources);
+        const totalRes = game.resources.food + game.resources.metal + game.resources.energy;
+        document.getElementById('sp-res-current').textContent = Math.floor(totalRes);
 
         const progressBar = document.getElementById('spaceport-progress-bar');
         progressBar.style.width = `${game.spaceportProgress}%`;
@@ -3553,7 +3563,7 @@ AudioManager.playSFX('sfx-alert', 0.7);
         if (game.spaceportBuilding) {
             startBtn.textContent = 'Construction In Progress...';
             startBtn.disabled = true;
-        } else if (totalPop >= 2000 && game.resources >= 10000) {
+        } else if (totalPop >= 2000 && totalRes >= 10000) {
             startBtn.textContent = 'Start Construction';
             startBtn.disabled = false;
         } else {
@@ -3563,8 +3573,9 @@ AudioManager.playSFX('sfx-alert', 0.7);
     }
 
     function startSpaceportConstruction() {
+        const totalRes = game.resources.food + game.resources.metal + game.resources.energy;
         const totalPop = game.cities.reduce((sum, c) => sum + c.population, 0);
-        if (totalPop < 2000 || game.resources < 10000) {
+        if (totalPop < 2000 || totalRes < 10000) {
             addMessage('Requirements not met!', 'warning');
             return;
         }
@@ -3586,6 +3597,7 @@ document.getElementById('total-pop').textContent = totalPop;
 const totalInfantry = game.cities.reduce((sum, c) => sum + c.stationedUnits.infantry, 0);
 const totalCavalry = game.cities.reduce((sum, c) => sum + c.stationedUnits.cavalry, 0);
 const totalArtillery = game.cities.reduce((sum, c) => sum + c.stationedUnits.artillery, 0);
+const totalRes = game.resources.food + game.resources.metal + game.resources.energy;
 
 document.getElementById('infantry-display').textContent = totalInfantry;
 document.getElementById('cavalry-display').textContent = totalCavalry;
@@ -3594,30 +3606,33 @@ document.getElementById('artillery-display').textContent = totalArtillery;
 
 document.getElementById('tribal-rep').textContent = game.tribalReputation;
 
-if (game.hasEmbassy) game.resources += 0.1;
-
-document.getElementById('build-city-btn').disabled = game.resources < 500;
+if (game.hasEmbassy) {
+    game.resources.food += 0.033;
+    game.resources.metal += 0.033;
+    game.resources.energy += 0.033;
+}
 document.getElementById('gather-btn').disabled = game.gatherCooldown > 0;
-document.getElementById('build-road-btn').disabled = !game.selectedCity || game.resources < 150 || game.placingCity;
+document.getElementById('build-city-btn').disabled = !hasResources({food: 200, metal: 200, energy: 100});
+document.getElementById('build-road-btn').disabled = !game.selectedCity || !hasResources({metal: 100, energy: 50}) || game.placingCity;
 
-document.getElementById('recruit-infantry-btn').disabled = game.resources < 100 || totalPop < 50;
-document.getElementById('recruit-cavalry-btn').disabled = game.resources < 250 || totalPop < 100;
-document.getElementById('recruit-artillery-btn').disabled = game.resources < 500 || totalPop < 10;
+document.getElementById('recruit-infantry-btn').disabled = !hasResources({food: 50, metal: 50, energy: 0}) || totalPop < 50;
+document.getElementById('recruit-cavalry-btn').disabled = !hasResources({food: 100, metal: 100, energy: 50}) || totalPop < 100;
+document.getElementById('recruit-artillery-btn').disabled = !hasResources({food: 50, metal: 300, energy: 150}) || totalPop < 10;
 
-document.getElementById('charity-small-btn').disabled = game.resources < 50;
-document.getElementById('charity-medium-btn').disabled = game.resources < 150;
-document.getElementById('charity-large-btn').disabled = game.resources < 400;
+document.getElementById('charity-small-btn').disabled = !hasResources({food: 30, metal: 15, energy: 5});
+document.getElementById('charity-medium-btn').disabled = !hasResources({food: 90, metal: 45, energy: 15});
+document.getElementById('charity-large-btn').disabled = !hasResources({food: 240, metal: 120, energy: 40});
 
 if (game.tribalTradeCooldown > 0) {
     game.tribalTradeCooldown--;
     document.getElementById('trade-btn').disabled = true;
     document.getElementById('trade-btn').textContent = `Trade (${Math.ceil(game.tribalTradeCooldown / 10)}s)`;
 } else {
-    document.getElementById('trade-btn').disabled = game.resources < 100 || game.tribalRelation === 'war' || game.tribalsDefeated;
+    document.getElementById('trade-btn').disabled = !hasResources({food: 60, metal: 30, energy: 10}) || game.tribalRelation === 'war' || game.tribalsDefeated;
     document.getElementById('trade-btn').textContent = 'Trade (100→+10)';
 }
 
-document.getElementById('embassy-btn').disabled = game.resources < 500 || game.hasEmbassy || game.tribalRelation === 'war' || game.tribalsDefeated;
+document.getElementById('embassy-btn').disabled = !hasResources({food: 200, metal: 200, energy: 100}) || game.hasEmbassy || game.tribalRelation === 'war' || game.tribalsDefeated;
 document.getElementById('denounce-btn').disabled = game.tribalRelation === 'war' || game.tribalsDefeated;
 document.getElementById('declare-war-btn').disabled = game.tribalRelation === 'war' || game.tribalsDefeated || game.peaceTreatyCooldown > 0;
 
