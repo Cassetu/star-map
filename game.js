@@ -630,23 +630,26 @@ function updateRoadPosition(roadEl, city1Id, city2Id) {
     if (!city1 || !city2) return;
 
     const planetView = document.getElementById('planet-view');
-    const planetWidth = planetView.offsetWidth;
-    const cityOffset = (20 / planetWidth) * 100;
+    const rect = planetView.getBoundingClientRect();
+    const aspectRatio = rect.height / rect.width;
 
-    const x1 = city1.x + cityOffset;
-    const y1 = city1.y + cityOffset;
-    const x2 = city2.x + cityOffset;
-    const y2 = city2.y + cityOffset;
+    const citySize = 20;
+
+    const x1 = city1.x;
+    const y1 = city1.y;
+    const x2 = city2.x;
+    const y2 = city2.y * aspectRatio;
 
     const dx = x2 - x1;
-    const dy = y2 - y1;
+    const dy = y2 - (y1 * aspectRatio);
     const length = Math.sqrt(dx * dx + dy * dy);
     const angle = Math.atan2(dy, dx) * 180 / Math.PI;
 
     roadEl.style.left = `${x1}%`;
     roadEl.style.top = `${y1}%`;
     roadEl.style.width = `${length}%`;
-    roadEl.style.transform = `rotate(${angle}deg)`;
+    roadEl.style.transform = `translate(${citySize}px, ${citySize}px) rotate(${angle}deg)`;
+    roadEl.style.transformOrigin = '0 0';
 }
 
 function initiatePeaceTalks() {
