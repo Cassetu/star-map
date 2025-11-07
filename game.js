@@ -1428,14 +1428,22 @@ function sendFoodAid(cityId, amount) {
     const city = game.cities.find(c => c.id === cityId);
     if (!city || city.isRebel) return;
 
-    if (!hasResources({food: amount, metal: 0, energy: 0})) {
+    if (city.foodStockpile >= 100) {
+        addMessage(`${city.name} stockpile is full!`, 'warning');
+        return;
+    }
+
+    const spaceAvailable = 100 - city.foodStockpile;
+    const actualAmount = Math.min(amount, spaceAvailable);
+
+    if (!hasResources({food: actualAmount, metal: 0, energy: 0})) {
         addMessage('Not enough food!', 'warning');
         return;
     }
 
-    spendResources({food: amount, metal: 0, energy: 0});
-    city.foodStockpile = Math.min(100, city.foodStockpile + amount);
-    addMessage(`Sent ${amount} food to ${city.name}!`, 'success');
+    spendResources({food: actualAmount, metal: 0, energy: 0});
+    city.foodStockpile = Math.min(100, city.foodStockpile + actualAmount);
+    addMessage(`Sent ${actualAmount} food to ${city.name}!`, 'success');
     AudioManager.playSFX('sfx-success', 0.4);
     selectCity(city);
 }
@@ -3479,16 +3487,19 @@ function updateMinimap() {
 
     const mainGame = document.getElementById('main-game');
     const rect = mainGame.getBoundingClientRect();
-    const planetView = document.getElementById('planet-view');
     const viewport = minimap.querySelector('.minimap-viewport');
 
     const planetWidth = rect.width * 10;
     const planetHeight = rect.height * 10;
 
-    const viewWidth = (rect.width / (planetWidth * mapZoom)) * 100;
-    const viewHeight = (rect.height / (planetHeight * mapZoom)) * 100;
-    const viewX = (-mapPanX / (planetWidth * mapZoom)) * 100;
-    const viewY = (-mapPanY / (planetHeight * mapZoom)) * 100;
+    const scaledWidth = planetWidth * mapZoom;
+    const scaledHeight = planetHeight * mapZoom;
+
+    const viewWidth = Math.min(100, (rect.width / scaledWidth) * 100);
+    const viewHeight = Math.min(100, (rect.height / scaledHeight) * 100);
+
+    const viewX = Math.max(0, Math.min(100 - viewWidth, (-mapPanX / scaledWidth) * 100));
+    const viewY = Math.max(0, Math.min(100 - viewHeight, (-mapPanY / scaledHeight) * 100));
 
     viewport.style.left = `${viewX}%`;
     viewport.style.top = `${viewY}%`;
@@ -4298,8 +4309,11 @@ function updateUI() {
         const planetWidth = gameRect.width * 10;
         const planetHeight = gameRect.height * 10;
 
-        mapPanX = -(x * planetWidth) + (gameRect.width / 2);
-        mapPanY = -(y * planetHeight) + (gameRect.height / 2);
+        const scaledWidth = planetWidth * mapZoom;
+        const scaledHeight = planetHeight * mapZoom;
+
+        mapPanX = -(x * scaledWidth) + (gameRect.width / 2);
+        mapPanY = -(y * scaledHeight) + (gameRect.height / 2);
 
         applyMapTransform();
         updateMinimap();
