@@ -719,20 +719,22 @@ function selectCity(city) {
     game.selectedType = 'city';
     const foodColor = city.foodStockpile > 50 ? '#4CAF50' : (city.foodStockpile > 20 ? '#ffaa00' : '#ff4400');
     const foodText = `
-        <div style="background: rgba(139,69,19,0.2); padding: 8px; border-radius: 5px; margin: 8px 0;">
-            <h4 style="color: #DEB887; font-size: 12px; margin-bottom: 6px;">Food Supply</h4>
-            <div style="width: 100%; height: 12px; background: rgba(0,0,0,0.5); border-radius: 5px; overflow: hidden; margin: 5px 0;">
-                <div style="width: ${city.foodStockpile}%; height: 100%; background: ${foodColor}; transition: width 0.3s;"></div>
-            </div>
-            <p style="font-size: 9px;">Stockpile: ${Math.floor(city.foodStockpile)}/100</p>
-            <p style="font-size: 9px;">Consumption: ${city.foodConsumptionRate.toFixed(2)}/tick</p>
-            ${!isCityInHabitableZone(city) && city.foodStockpile < 50 ?
-                '<p style="font-size: 9px; color: #ff4400;">⚠️ Low food! Population dying faster!</p>' : ''}
-            <div style="display: flex; gap: 5px; margin-top: 5px;">
-                <button class="action-btn" style="font-size: 9px; padding: 4px;" onclick="sendFoodAid(${city.id}, 20)" ${game.resources.food < 20 ? 'disabled' : ''}>+20 Food</button>
-                <button class="action-btn" style="font-size: 9px; padding: 4px;" onclick="sendFoodAid(${city.id}, 50)" ${game.resources.food < 50 ? 'disabled' : ''}>+50 Food</button>
-            </div>
-        </div>`;
+         <div style="background: rgba(139,69,19,0.2); padding: 8px; border-radius: 5px; margin: 8px 0;">
+             <h4 style="color: #DEB887; font-size: 12px; margin-bottom: 6px;">Food Supply</h4>
+             <div style="width: 100%; height: 12px; background: rgba(0,0,0,0.5); border-radius: 5px; overflow: hidden; margin: 5px 0;">
+                 <div class="food-stockpile-fill" style="width: ${city.foodStockpile}%; height: 100%; background: ${foodColor}; transition: width 0.3s;"></div>
+             </div>
+             <p class="food-stockpile-text" style="font-size: 9px;">Stockpile: ${Math.floor(city.foodStockpile)}/100</p>
+             <p class="food-consumption-text" style="font-size: 9px;">Consumption: ${city.foodConsumptionRate.toFixed(2)}/tick</p>
+             <p class="food-autofeed-text" style="font-size: 9px;">Auto-feed: ${city.autoFeed ? '✓ ON' : '✗ OFF'}</p>
+             ${!isCityInHabitableZone(city) && city.foodStockpile < 50 ?
+                 '<p style="font-size: 9px; color: #ff4400;">⚠️ Low food! Population dying faster!</p>' : ''}
+             <div style="display: flex; gap: 5px; margin-top: 5px;">
+                 <button class="action-btn" style="font-size: 9px; padding: 4px;" onclick="toggleAutoFeed(${city.id})">${city.autoFeed ? 'Disable' : 'Enable'} Auto-feed</button>
+                 <button class="action-btn" style="font-size: 9px; padding: 4px;" onclick="sendFoodAid(${city.id}, 20)" ${game.resources.food < 20 ? 'disabled' : ''}>+20 Food</button>
+                 <button class="action-btn" style="font-size: 9px; padding: 4px;" onclick="sendFoodAid(${city.id}, 50)" ${game.resources.food < 50 ? 'disabled' : ''}>+50 Food</button>
+             </div>
+         </div>`;
 
     const radius = document.getElementById('placement-radius');
 
@@ -1076,7 +1078,8 @@ const startingCity = {
     tradeBoost: 0,
     specialization: 'none',
     foodStockpile: 50,
-    foodConsumptionRate: 0
+    foodConsumptionRate: 0,
+    autoFeed: true
 };
 
 game.cities.push(startingCity);
@@ -1259,7 +1262,7 @@ function update() {
             const foodNeeded = calculateFoodNeeds(city);
             city.foodConsumptionRate = foodNeeded;
 
-            if (game.resources.food >= foodNeeded) {
+            if (city.autoFeed && game.resources.food >= foodNeeded) {
                 game.resources.food -= foodNeeded;
                 city.foodStockpile = Math.min(100, city.foodStockpile + 0.5);
 
@@ -1288,7 +1291,7 @@ function update() {
             const tradeBonus = city.tradeBoost > 0 ? 1.2 : 1.0;
             const specBonus = 1 + CITY_SPECIALIZATIONS[city.specialization].resourceBonus;
             const totalProductionMod = (1 + roadBonus) * conversionPenalty * lawBonus * tradeBonus * popProductionBonus * specBonus;
-            const baseProduction = baseRes + (featureBonus.resourceBonus * 0.01);
+            const baseProduction = baseRes;
 
             if (city.specialization === 'trade') {
                 game.resources.food += (baseProduction + (featureBonus.foodBonus * 0.01)) * totalProductionMod * 0.4;
@@ -1318,7 +1321,7 @@ function update() {
             const foodNeeded = calculateFoodNeeds(city);
             city.foodConsumptionRate = foodNeeded;
 
-            if (city.foodStockpile > 0 && game.resources.food >= foodNeeded) {
+            if (city.foodStockpile > 0 && city.autoFeed && game.resources.food >= foodNeeded) {
                 game.resources.food -= foodNeeded;
 
                 const dist = getDistanceFromZone(city);
@@ -1425,13 +1428,12 @@ function sendFoodAid(cityId, amount) {
     const city = game.cities.find(c => c.id === cityId);
     if (!city || city.isRebel) return;
 
-    const foodCost = amount;
-    if (game.resources.food < foodCost) {
+    if (!hasResources({food: amount, metal: 0, energy: 0})) {
         addMessage('Not enough food!', 'warning');
         return;
     }
 
-    game.resources.food -= foodCost;
+    spendResources({food: amount, metal: 0, energy: 0});
     city.foodStockpile = Math.min(100, city.foodStockpile + amount);
     addMessage(`Sent ${amount} food to ${city.name}!`, 'success');
     AudioManager.playSFX('sfx-success', 0.4);
@@ -1503,6 +1505,15 @@ if (game.peaceDemandsMet === 0) {
 
 game.peaceDemands = [];
 game.currentPeaceDemand = null;
+}
+
+function toggleAutoFeed(cityId) {
+    const city = game.cities.find(c => c.id === cityId);
+    if (!city || city.isRebel) return;
+
+    city.autoFeed = !city.autoFeed;
+    addMessage(`${city.name}: Auto-feed ${city.autoFeed ? 'ON' : 'OFF'}`, 'info');
+    selectCity(city);
 }
 
 function checkTribalWarDeclaration() {
@@ -1638,30 +1649,43 @@ startEnhancedDDRBattle(tribal);
 
 
 function updateCityInfoOnly(city) {
-const popBar = document.querySelector('.population-fill');
-if (popBar) {
-    const popPercent = (city.population / city.maxPopulation) * 100;
-    popBar.style.width = `${popPercent}%`;
-}
-
-const happinessBar = document.querySelector('.happiness-fill');
-const happinessText = document.querySelector('.happiness-text');
-if (happinessBar && happinessText) {
-    happinessBar.style.width = `${city.happiness}%`;
-    happinessText.textContent = Math.floor(city.happiness);
-    const happinessColor = city.happiness > 60 ? '#4CAF50' : (city.happiness > 30 ? '#ffaa00' : '#ff4400');
-    happinessBar.style.background = happinessColor;
-}
-
-const inZone = isCityInHabitableZone(city);
-const statusElements = document.querySelectorAll('#info-panel p');
-statusElements.forEach(el => {
-    if (el.innerHTML.includes('<strong>Population:</strong>')) {
-        el.innerHTML = `<strong>Population:</strong> ${Math.floor(city.population)}/${city.maxPopulation}`;
-    } else if (el.innerHTML.includes('<strong>Status:</strong>')) {
-        el.innerHTML = `<strong>Status:</strong> ${inZone ? '✓ In Zone' : '⚠ Outside!'}`;
+    const popBar = document.querySelector('.population-fill');
+    if (popBar) {
+        const popPercent = (city.population / city.maxPopulation) * 100;
+        popBar.style.width = `${popPercent}%`;
     }
-});
+
+    const happinessBar = document.querySelector('.happiness-fill');
+    const happinessText = document.querySelector('.happiness-text');
+    if (happinessBar && happinessText) {
+        happinessBar.style.width = `${city.happiness}%`;
+        happinessText.textContent = Math.floor(city.happiness);
+        const happinessColor = city.happiness > 60 ? '#4CAF50' : (city.happiness > 30 ? '#ffaa00' : '#ff4400');
+        happinessBar.style.background = happinessColor;
+    }
+
+    const foodColor = city.foodStockpile > 50 ? '#4CAF50' : (city.foodStockpile > 20 ? '#ffaa00' : '#ff4400');
+    const foodFillBar = document.querySelector('#info-panel .food-stockpile-fill');
+    if (foodFillBar) {
+        foodFillBar.style.width = `${city.foodStockpile}%`;
+        foodFillBar.style.background = foodColor;
+    }
+
+    const inZone = isCityInHabitableZone(city);
+    const statusElements = document.querySelectorAll('#info-panel p');
+    statusElements.forEach(el => {
+        if (el.innerHTML.includes('<strong>Population:</strong>')) {
+            el.innerHTML = `<strong>Population:</strong> ${Math.floor(city.population)}/${city.maxPopulation}`;
+        } else if (el.innerHTML.includes('<strong>Status:</strong>')) {
+            el.innerHTML = `<strong>Status:</strong> ${inZone ? '✓ In Zone' : '⚠ Outside!'}`;
+        } else if (el.classList && el.classList.contains('food-stockpile-text')) {
+            el.innerHTML = `Stockpile: ${Math.floor(city.foodStockpile)}/100`;
+        } else if (el.classList && el.classList.contains('food-consumption-text')) {
+            el.innerHTML = `Consumption: ${city.foodConsumptionRate.toFixed(2)}/tick`;
+        } else if (el.classList && el.classList.contains('food-autofeed-text')) {
+            el.innerHTML = `Auto-feed: ${city.autoFeed ? '✓ ON' : '✗ OFF'}`;
+        }
+    });
 }
 
 function updateTribalInfoOnly(tribal) {
@@ -2179,7 +2203,8 @@ function createCity(x, y) {
         tradeBoost: 0,
         specialization: 'none',
         foodStockpile: 50,
-        foodConsumptionRate: 0
+        foodConsumptionRate: 0,
+        autoFeed: true
     };
 
 
@@ -3680,7 +3705,8 @@ function convertTribalCity(tribal) {
         stationedUnits: { infantry: 1, cavalry: 0, artillery: 0 },
         tradeBoost: 0,
         foodStockpile: 30,
-        foodConsumptionRate: 0
+        foodConsumptionRate: 0,
+        autoFeed: true
     };
 
             game.cities.push(city);
@@ -3710,7 +3736,7 @@ function convertTribalCity(tribal) {
 }
 
 function calculateFoodNeeds(city) {
-    const baseFoodPerPop = 0.01;
+    const baseFoodPerPop = 0.00005;
     const inZone = isCityInHabitableZone(city);
 
     let consumption = city.population * baseFoodPerPop;
