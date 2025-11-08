@@ -1385,8 +1385,8 @@ button.active { background: #00ff00; color: #000; border-color: #00ff00; }
 
 .tech-node {
     position: absolute;
-    width: 100px;
-    height: 100px;
+    width: 80px;
+    height: 80px;
     background: rgba(0, 0, 50, 0.8);
     border: 3px solid rgba(255, 255, 255, 0.3);
     border-radius: 10px;
@@ -1396,7 +1396,7 @@ button.active { background: #00ff00; color: #000; border-color: #00ff00; }
     justify-content: center;
     cursor: pointer;
     transition: all 0.3s;
-    padding: 5px;
+    padding: 4px;
 }
 
 .tech-node:hover:not(.locked):not(.unlocked) {
@@ -1417,29 +1417,29 @@ button.active { background: #00ff00; color: #000; border-color: #00ff00; }
 }
 
 .tech-node-icon {
-    font-size: 28px;
-    margin-bottom: 3px;
+    font-size: 22px;
+    margin-bottom: 2px;
 }
 
 .tech-node-name {
-    font-size: 9px;
+    font-size: 8px;
     font-weight: bold;
     color: #00ff00;
     text-align: center;
-    margin-bottom: 2px;
-    line-height: 1.1;
+    margin-bottom: 1px;
+    line-height: 1;
 }
 
 .tech-node-desc {
     font-size: 7px;
     text-align: center;
     opacity: 0.8;
-    margin-bottom: 2px;
-    line-height: 1.1;
+    margin-bottom: 1px;
+    line-height: 1;
 }
 
 .tech-node-cost {
-    font-size: 8px;
+    font-size: 7px;
     color: #4CAF50;
 }
 

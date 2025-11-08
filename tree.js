@@ -562,7 +562,7 @@ const TechTree = {
             if (tech.requires.length === 0) return;
 
             const toX = tech.position.x;
-            const toY = tech.position.y;
+            const toY = tech.position.y + 40;
 
             if (tech.requires.length === 1) {
                 const reqKey = tech.requires[0];
@@ -571,8 +571,8 @@ const TechTree = {
                 const isToUnlocked = this.unlockedTechs.includes(techKey);
                 const bothUnlocked = isFromUnlocked && isToUnlocked;
 
-                const fromX = fromTech.position.x + 120;
-                const fromY = fromTech.position.y;
+                const fromX = fromTech.position.x + 80;
+                const fromY = fromTech.position.y + 40;
 
                 ctx.beginPath();
                 ctx.moveTo(fromX, fromY);
@@ -589,20 +589,17 @@ const TechTree = {
 
                 ctx.stroke();
             } else {
-                const avgX = tech.requires.reduce((sum, reqKey) => sum + TECHNOLOGIES[reqKey].position.x, 0) / tech.requires.length + 60;
-                const avgY = tech.requires.reduce((sum, reqKey) => sum + TECHNOLOGIES[reqKey].position.y, 0) / tech.requires.length;
-
-                const convergenceX = toX - 60;
+                const convergenceX = toX - 35;
                 const convergenceY = toY;
 
                 tech.requires.forEach(reqKey => {
                     const fromTech = TECHNOLOGIES[reqKey];
-                    const isFromUnlocked = this.unlockedTechs.includes(reqKey);
+                    const allReqsUnlocked = tech.requires.every(r => this.unlockedTechs.includes(r));
                     const isToUnlocked = this.unlockedTechs.includes(techKey);
-                    const allUnlocked = tech.requires.every(r => this.unlockedTechs.includes(r)) && isToUnlocked;
+                    const allUnlocked = allReqsUnlocked && isToUnlocked;
 
-                    const fromX = fromTech.position.x + 120;
-                    const fromY = fromTech.position.y;
+                    const fromX = fromTech.position.x + 80;
+                    const fromY = fromTech.position.y + 40;
 
                     ctx.beginPath();
                     ctx.moveTo(fromX, fromY);
@@ -667,6 +664,13 @@ const TechTree = {
         const tech = TECHNOLOGIES[techKey];
         game.researchPoints -= tech.cost;
         this.unlockedTechs.push(techKey);
+
+        if (tech.effect === 'maxPopulation') {
+            game.cities.forEach(city => {
+                city.maxPopulation = 500 + this.getTechBonus('maxPopulation');
+                updateCityDisplay(city);
+            });
+        }
 
         addMessage(`Researched: ${tech.name}!`, 'success');
         AudioManager.playSFX('sfx-success', 0.7);
