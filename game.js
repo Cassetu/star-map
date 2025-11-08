@@ -56,13 +56,14 @@ cost: { food: 150, metal: 200, energy: 50 },
     description: '+50% resources, 20% more expensive units'
 },
 research: {
-name: 'Research Center',
-resourceBonus: 0.2,
-growthBonus: 0.3,
-recruitCostMod: 1,
-cost: { food: 200, metal: 150, energy: 250 },
+    name: 'Research Center',
+    resourceBonus: 0.2,
+    growthBonus: 0.3,
+    recruitCostMod: 1,
+    cost: { food: 200, metal: 150, energy: 250 },
     icon: '🔬',
-    description: '+20% resources, +30% growth'
+    description: '+20% resources, +30% growth, generates research',
+    researchRate: 0.1
 }
 };
 
@@ -165,6 +166,7 @@ apply: () => {
 
 const game = {
     running: false, paused: false, year: 0, resources: { food: 500, metal: 400, energy: 250 },
+    researchPoints: 0,
     cities: [], roads: [], features: [], tribalCities: [], tribalRoads: [],
     habitableZone: { left: 35, width: 30 }, zoneShiftSpeed: -0.5,
     selectedCity: null, selectedType: null, placingCity: false, buildingRoad: false, roadStartCity: null,
@@ -1075,7 +1077,7 @@ const startingCity = {
     x: 50,
     y: 50,
     population: 150,
-    maxPopulation: 500,
+    maxPopulation: 500 + TechTree.getTechBonus('maxPopulation'),
     warned: false,
     zoneType: getZoneType(50),
     isRebel: false,
@@ -1281,6 +1283,7 @@ function update() {
                     const foodBonus = Math.min(1.5, city.foodStockpile / 50);
                     const techGrowthBonus = 1 + TechTree.getTechBonus('popGrowth');
                     const growthRate = (baseGrowth + (featureBonus.growthPenalty * 0.01)) * specGrowthMod * foodBonus * techGrowthBonus;
+                    city.population += growthRate;
                 } else {
                     city.population += 0.1;
                 }
@@ -1314,6 +1317,7 @@ function update() {
                 const foodProd = (baseProduction + (featureBonus.foodBonus * 0.01)) * totalProductionMod * 0.2;
                 const metalProd = (baseProduction + (featureBonus.metalBonus * 0.01)) * totalProductionMod * 0.3;
                 const energyProd = (baseProduction + (featureBonus.energyBonus * 0.01)) * totalProductionMod * 0.5;
+                game.researchPoints += 0.1;
 
                 game.resources.food += foodProd * (1 + TechTree.getTechBonus('foodProduction'));
                 game.resources.metal += metalProd * (1 + TechTree.getTechBonus('metalProduction'));
@@ -2224,7 +2228,7 @@ function createCity(x, y) {
         name: getCityName(),
         position: x, x, y,
         population: 100,
-        maxPopulation: 500,
+        maxPopulation: 500 + TechTree.getTechBonus('maxPopulation'),
         warned: false,
         zoneType: getZoneType(x),
         isRebel: false,
@@ -2948,16 +2952,22 @@ panel.style.display = 'block';
         });
     }
 
-    function getTotalAttack(city) {
-return city.stationedUnits.infantry * UNIT_TYPES.infantry.attack +
-       city.stationedUnits.cavalry * UNIT_TYPES.cavalry.attack +
-       city.stationedUnits.artillery * UNIT_TYPES.artillery.attack;
+function getTotalAttack(city) {
+    const infAttack = city.stationedUnits.infantry * UNIT_TYPES.infantry.attack;
+    const cavAttack = city.stationedUnits.cavalry * UNIT_TYPES.cavalry.attack;
+    const artAttack = city.stationedUnits.artillery * UNIT_TYPES.artillery.attack;
+
+    const infBonus = 1 + TechTree.getTechBonus('infantryAttack');
+    const cavBonus = 1 + TechTree.getTechBonus('cavalryAttack');
+    const artBonus = 1 + TechTree.getTechBonus('artilleryAttack');
+
+    return (infAttack * infBonus) + (cavAttack * cavBonus) + (artAttack * artBonus);
 }
 
 function getTotalDefense(city) {
-return city.stationedUnits.infantry * UNIT_TYPES.infantry.defense +
-       city.stationedUnits.cavalry * UNIT_TYPES.cavalry.defense +
-       city.stationedUnits.artillery * UNIT_TYPES.artillery.defense;
+    return city.stationedUnits.infantry * UNIT_TYPES.infantry.defense +
+           city.stationedUnits.cavalry * UNIT_TYPES.cavalry.defense +
+           city.stationedUnits.artillery * UNIT_TYPES.artillery.defense;
 }
 
     function showArmyArrow(fromCity, toTribal) {
@@ -3735,7 +3745,8 @@ function convertTribalCity(tribal) {
         name: tribal.name + ' (Claimed)',
         position: tribal.x, x: tribal.x, y: tribal.y,
         population: Math.max(100, Math.floor(tribal.population * 0.6)),
-        maxPopulation: 750, warned: false,
+        maxPopulation: 750 + TechTree.getTechBonus('maxPopulation'),
+        warned: false,
         zoneType: getZoneType(tribal.x),
         isRebel: true, isConverted: true, upgradeLevel: 0,
         happiness: 20, conquestRebellionTimer: 300,
@@ -4154,6 +4165,7 @@ function updateUI() {
     document.getElementById('metal-display').textContent = Math.floor(game.resources.metal);
     document.getElementById('energy-display').textContent = Math.floor(game.resources.energy);
     document.getElementById('total-pop').textContent = totalPop;
+    document.getElementById('research-display').textContent = Math.floor(game.researchPoints);
 
 
     const totalInfantry = game.cities.reduce((sum, c) => sum + c.stationedUnits.infantry, 0);

@@ -1,127 +1,520 @@
 const TECHNOLOGIES = {
-    advancedFarming: {
-        name: 'Advanced Farming',
-        description: '+30% population growth in all cities',
-        cost: { food: 500, metal: 200, energy: 100 },
-        icon: '🌾',
-        requires: [],
-        effect: 'popGrowth',
-        value: 0.3
-    },
-    militaryTactics: {
-        name: 'Military Tactics',
-        description: '+15% attack power for all units',
-        cost: { food: 300, metal: 400, energy: 200 },
+    basicInfantry: {
+        name: 'Militia Training',
+        description: 'Infantry +5% ATK',
+        cost: 30,
         icon: '⚔️',
         requires: [],
-        effect: 'attackBonus',
-        value: 0.15
+        effect: 'infantryAttack',
+        value: 0.05,
+        position: { x: 80, y: 80 },
+        category: 'military'
     },
-    efficientRoads: {
-        name: 'Efficient Roads',
-        description: 'Roads cost 50% less to build',
-        cost: { food: 200, metal: 300, energy: 150 },
-        icon: '🛣️',
+    disciplinedInfantry: {
+        name: 'Disciplined Ranks',
+        description: 'Infantry +10% ATK',
+        cost: 60,
+        icon: '⚔️',
+        requires: ['basicInfantry'],
+        effect: 'infantryAttack',
+        value: 0.10,
+        position: { x: 230, y: 80 },
+        category: 'military'
+    },
+    eliteInfantry: {
+        name: 'Elite Warriors',
+        description: 'Infantry +15% ATK',
+        cost: 120,
+        icon: '⚔️',
+        requires: ['disciplinedInfantry'],
+        effect: 'infantryAttack',
+        value: 0.15,
+        position: { x: 380, y: 80 },
+        category: 'military'
+    },
+    professionalArmy: {
+        name: 'Professional Army',
+        description: 'Infantry +25% ATK',
+        cost: 200,
+        icon: '⚔️',
+        requires: ['eliteInfantry'],
+        effect: 'infantryAttack',
+        value: 0.25,
+        position: { x: 530, y: 80 },
+        category: 'military'
+    },
+
+    mountedScouts: {
+        name: 'Mounted Scouts',
+        description: 'Cavalry +5% ATK',
+        cost: 40,
+        icon: '♞',
         requires: [],
-        effect: 'roadCost',
-        value: 0.5
+        effect: 'cavalryAttack',
+        value: 0.05,
+        position: { x: 80, y: 180 },
+        category: 'military'
     },
-    fortifications: {
-        name: 'Fortifications',
-        description: 'City upgrades cost 25% less',
-        cost: { food: 400, metal: 500, energy: 200 },
-        icon: '🏰',
+    lightCavalry: {
+        name: 'Light Cavalry',
+        description: 'Cavalry +10% ATK',
+        cost: 80,
+        icon: '♞',
+        requires: ['mountedScouts'],
+        effect: 'cavalryAttack',
+        value: 0.10,
+        position: { x: 230, y: 180 },
+        category: 'military'
+    },
+    heavyCavalry: {
+        name: 'Heavy Cavalry',
+        description: 'Cavalry +15% ATK',
+        cost: 150,
+        icon: '♞',
+        requires: ['lightCavalry'],
+        effect: 'cavalryAttack',
+        value: 0.15,
+        position: { x: 380, y: 180 },
+        category: 'military'
+    },
+    shockCavalry: {
+        name: 'Shock Troops',
+        description: 'Cavalry +25% ATK',
+        cost: 250,
+        icon: '♞',
+        requires: ['heavyCavalry'],
+        effect: 'cavalryAttack',
+        value: 0.25,
+        position: { x: 530, y: 180 },
+        category: 'military'
+    },
+
+    siegeEngines: {
+        name: 'Siege Engines',
+        description: 'Artillery +5% ATK',
+        cost: 50,
+        icon: '🎯',
         requires: [],
-        effect: 'upgradeCost',
-        value: 0.25
+        effect: 'artilleryAttack',
+        value: 0.05,
+        position: { x: 80, y: 280 },
+        category: 'military'
     },
-    industrialization: {
-        name: 'Industrialization',
-        description: '+25% metal production in all cities',
-        cost: { food: 300, metal: 600, energy: 300 },
-        icon: '⚙️',
-        requires: ['efficientRoads'],
+    mortars: {
+        name: 'Mortar Teams',
+        description: 'Artillery +12% ATK',
+        cost: 100,
+        icon: '💣',
+        requires: ['siegeEngines'],
+        effect: 'artilleryAttack',
+        value: 0.12,
+        position: { x: 230, y: 280 },
+        category: 'military'
+    },
+    fieldHowitzers: {
+        name: 'Field Howitzers',
+        description: 'Artillery +20% ATK',
+        cost: 180,
+        icon: '💥',
+        requires: ['mortars'],
+        effect: 'artilleryAttack',
+        value: 0.20,
+        position: { x: 380, y: 280 },
+        category: 'military'
+    },
+    heavyArtillery: {
+        name: 'Heavy Artillery',
+        description: 'Artillery +35% ATK',
+        cost: 300,
+        icon: '🚀',
+        requires: ['fieldHowitzers'],
+        effect: 'artilleryAttack',
+        value: 0.35,
+        position: { x: 530, y: 280 },
+        category: 'military'
+    },
+
+    combatTactics: {
+        name: 'Combat Tactics',
+        description: 'All units +10% DEF',
+        cost: 90,
+        icon: '🛡️',
+        requires: ['basicInfantry', 'mountedScouts'],
+        effect: 'defenseBonus',
+        value: 0.10,
+        position: { x: 155, y: 130 },
+        category: 'military'
+    },
+    advancedTactics: {
+        name: 'Advanced Tactics',
+        description: 'All units +20% DEF',
+        cost: 180,
+        icon: '🛡️',
+        requires: ['combatTactics', 'disciplinedInfantry', 'lightCavalry'],
+        effect: 'defenseBonus',
+        value: 0.20,
+        position: { x: 305, y: 130 },
+        category: 'military'
+    },
+
+    massRecruitment: {
+        name: 'Mass Conscription',
+        description: 'Units need -20% pop',
+        cost: 100,
+        icon: '👥',
+        requires: ['combatTactics'],
+        effect: 'recruitmentCost',
+        value: 0.20,
+        position: { x: 155, y: 230 },
+        category: 'military'
+    },
+    professionalRecruitment: {
+        name: 'Professional Recruitment',
+        description: 'Units need -40% pop',
+        cost: 200,
+        icon: '🎖️',
+        requires: ['massRecruitment', 'advancedTactics'],
+        effect: 'recruitmentCost',
+        value: 0.40,
+        position: { x: 305, y: 230 },
+        category: 'military'
+    },
+
+    basicFarming: {
+        name: 'Basic Farming',
+        description: '+10% food production',
+        cost: 25,
+        icon: '🌱',
+        requires: [],
+        effect: 'foodProduction',
+        value: 0.10,
+        position: { x: 80, y: 380 },
+        category: 'agriculture'
+    },
+    irrigation: {
+        name: 'Irrigation',
+        description: '+20% food production',
+        cost: 50,
+        icon: '💧',
+        requires: ['basicFarming'],
+        effect: 'foodProduction',
+        value: 0.20,
+        position: { x: 230, y: 380 },
+        category: 'agriculture'
+    },
+    cropRotation: {
+        name: 'Crop Rotation',
+        description: '+30% food production',
+        cost: 100,
+        icon: '🌾',
+        requires: ['irrigation'],
+        effect: 'foodProduction',
+        value: 0.30,
+        position: { x: 380, y: 380 },
+        category: 'agriculture'
+    },
+    mechanizedFarming: {
+        name: 'Mechanized Farming',
+        description: '+50% food production',
+        cost: 180,
+        icon: '🚜',
+        requires: ['cropRotation'],
+        effect: 'foodProduction',
+        value: 0.50,
+        position: { x: 530, y: 380 },
+        category: 'agriculture'
+    },
+
+    fertilizers: {
+        name: 'Fertilizers',
+        description: '+15% pop growth',
+        cost: 60,
+        icon: '🌿',
+        requires: ['basicFarming'],
+        effect: 'popGrowth',
+        value: 0.15,
+        position: { x: 155, y: 440 },
+        category: 'agriculture'
+    },
+    advancedBreeding: {
+        name: 'Advanced Breeding',
+        description: '+30% pop growth',
+        cost: 120,
+        icon: '🐄',
+        requires: ['fertilizers', 'irrigation'],
+        effect: 'popGrowth',
+        value: 0.30,
+        position: { x: 305, y: 440 },
+        category: 'agriculture'
+    },
+
+    basicMining: {
+        name: 'Basic Mining',
+        description: '+15% metal production',
+        cost: 30,
+        icon: '⛏️',
+        requires: [],
         effect: 'metalProduction',
-        value: 0.25
+        value: 0.15,
+        position: { x: 680, y: 80 },
+        category: 'industry'
     },
-    energyEfficiency: {
-        name: 'Energy Efficiency',
-        description: '+25% energy production in all cities',
-        cost: { food: 200, metal: 400, energy: 500 },
-        icon: '⚡',
+    deepMining: {
+        name: 'Deep Mining',
+        description: '+25% metal production',
+        cost: 70,
+        icon: '⚒️',
+        requires: ['basicMining'],
+        effect: 'metalProduction',
+        value: 0.25,
+        position: { x: 830, y: 80 },
+        category: 'industry'
+    },
+    industrialForges: {
+        name: 'Industrial Forges',
+        description: '+40% metal production',
+        cost: 140,
+        icon: '🏭',
+        requires: ['deepMining'],
+        effect: 'metalProduction',
+        value: 0.40,
+        position: { x: 980, y: 80 },
+        category: 'industry'
+    },
+
+    windmills: {
+        name: 'Windmills',
+        description: '+15% energy production',
+        cost: 40,
+        icon: '💨',
         requires: [],
         effect: 'energyProduction',
-        value: 0.25
+        value: 0.15,
+        position: { x: 680, y: 180 },
+        category: 'industry'
     },
-    massRecruitment: {
-        name: 'Mass Recruitment',
-        description: 'Units require 25% less population',
-        cost: { food: 600, metal: 400, energy: 300 },
-        icon: '👥',
-        requires: ['militaryTactics'],
-        effect: 'recruitmentCost',
-        value: 0.25
+    steamPower: {
+        name: 'Steam Power',
+        description: '+30% energy production',
+        cost: 90,
+        icon: '⚙️',
+        requires: ['windmills'],
+        effect: 'energyProduction',
+        value: 0.30,
+        position: { x: 830, y: 180 },
+        category: 'industry'
     },
-    veteranCorps: {
-        name: 'Veteran Corps',
-        description: '+20% defense for all units',
-        cost: { food: 400, metal: 600, energy: 400 },
-        icon: '🛡️',
-        requires: ['militaryTactics'],
-        effect: 'defenseBonus',
-        value: 0.2
+    advancedGenerators: {
+        name: 'Advanced Generators',
+        description: '+50% energy production',
+        cost: 170,
+        icon: '⚡',
+        requires: ['steamPower'],
+        effect: 'energyProduction',
+        value: 0.50,
+        position: { x: 980, y: 180 },
+        category: 'industry'
     },
-    greenRevolution: {
-        name: 'Green Revolution',
-        description: '+40% food production in all cities',
-        cost: { food: 800, metal: 300, energy: 200 },
-        icon: '🌿',
-        requires: ['advancedFarming'],
-        effect: 'foodProduction',
-        value: 0.4
+
+    industrialization: {
+        name: 'Industrialization',
+        description: '+20% all production',
+        cost: 200,
+        icon: '🏗️',
+        requires: ['deepMining', 'steamPower'],
+        effect: 'allProduction',
+        value: 0.20,
+        position: { x: 755, y: 130 },
+        category: 'industry'
     },
-    rapidExpansion: {
-        name: 'Rapid Expansion',
-        description: 'New cities cost 30% less',
-        cost: { food: 500, metal: 500, energy: 300 },
+
+    dirtRoads: {
+        name: 'Dirt Roads',
+        description: 'Roads cost -25%',
+        cost: 35,
+        icon: '🛤️',
+        requires: [],
+        effect: 'roadCost',
+        value: 0.25,
+        position: { x: 680, y: 280 },
+        category: 'infrastructure'
+    },
+    pavedRoads: {
+        name: 'Paved Roads',
+        description: 'Roads cost -50%',
+        cost: 80,
+        icon: '🛣️',
+        requires: ['dirtRoads'],
+        effect: 'roadCost',
+        value: 0.50,
+        position: { x: 830, y: 280 },
+        category: 'infrastructure'
+    },
+    highways: {
+        name: 'Highways',
+        description: 'Roads give +10% bonus',
+        cost: 150,
+        icon: '🚗',
+        requires: ['pavedRoads'],
+        effect: 'roadBonus',
+        value: 0.10,
+        position: { x: 980, y: 280 },
+        category: 'infrastructure'
+    },
+
+    basicHousing: {
+        name: 'Basic Housing',
+        description: 'Max pop +50',
+        cost: 40,
+        icon: '🏠',
+        requires: [],
+        effect: 'maxPopulation',
+        value: 50,
+        position: { x: 680, y: 380 },
+        category: 'infrastructure'
+    },
+    apartments: {
+        name: 'Apartments',
+        description: 'Max pop +100',
+        cost: 90,
+        icon: '🏢',
+        requires: ['basicHousing'],
+        effect: 'maxPopulation',
+        value: 100,
+        position: { x: 830, y: 380 },
+        category: 'infrastructure'
+    },
+    skyscrapers: {
+        name: 'Skyscrapers',
+        description: 'Max pop +200',
+        cost: 180,
         icon: '🏙️',
-        requires: ['advancedFarming', 'efficientRoads'],
+        requires: ['apartments'],
+        effect: 'maxPopulation',
+        value: 200,
+        position: { x: 980, y: 380 },
+        category: 'infrastructure'
+    },
+
+    woodenWalls: {
+        name: 'Wooden Walls',
+        description: 'Upgrades cost -20%',
+        cost: 50,
+        icon: '🪵',
+        requires: [],
+        effect: 'upgradeCost',
+        value: 0.20,
+        position: { x: 680, y: 480 },
+        category: 'infrastructure'
+    },
+    stoneWalls: {
+        name: 'Stone Walls',
+        description: 'Upgrades cost -40%',
+        cost: 110,
+        icon: '🧱',
+        requires: ['woodenWalls'],
+        effect: 'upgradeCost',
+        value: 0.40,
+        position: { x: 830, y: 480 },
+        category: 'infrastructure'
+    },
+    fortresses: {
+        name: 'Fortresses',
+        description: 'Cities get +15% DEF',
+        cost: 200,
+        icon: '🏰',
+        requires: ['stoneWalls'],
+        effect: 'cityDefense',
+        value: 0.15,
+        position: { x: 980, y: 480 },
+        category: 'infrastructure'
+    },
+
+    settlementPlanning: {
+        name: 'Settlement Planning',
+        description: 'Cities cost -20%',
+        cost: 70,
+        icon: '🗺️',
+        requires: ['basicHousing', 'dirtRoads'],
         effect: 'cityCost',
-        value: 0.3
+        value: 0.20,
+        position: { x: 755, y: 330 },
+        category: 'infrastructure'
+    },
+    urbanPlanning: {
+        name: 'Urban Planning',
+        description: 'Cities cost -40%',
+        cost: 150,
+        icon: '📐',
+        requires: ['settlementPlanning', 'apartments', 'pavedRoads'],
+        effect: 'cityCost',
+        value: 0.40,
+        position: { x: 905, y: 330 },
+        category: 'infrastructure'
     }
 };
 
 const TechTree = {
     unlockedTechs: [],
+    isOpen: false,
 
     init() {
-        this.createTechPanel();
+        this.createTechButton();
+        this.createTechOverlay();
     },
 
-    createTechPanel() {
-        const leftPanel = document.getElementById('left-panel');
+    createTechButton() {
+        const btn = document.createElement('button');
+        btn.id = 'tech-tree-btn';
+        btn.textContent = 'Research';
+        btn.onclick = () => this.toggleTechTree();
 
-        const section = document.createElement('div');
-        section.className = 'collapsible-section';
-        section.innerHTML = `
-            <div class="collapsible-header" onclick="toggleCollapsible('tech-tree')">
-                <h4>TECHNOLOGY TREE</h4>
-                <span class="collapsible-indicator" id="tech-tree-indicator">▼</span>
-            </div>
-            <div class="collapsible-content" id="tech-tree-content">
-                <div id="tech-tree-container"></div>
+        const controls = document.getElementById('controls');
+        const pauseBtn = document.getElementById('pause-btn');
+        controls.insertBefore(btn, pauseBtn);
+    },
+
+    createTechOverlay() {
+        const overlay = document.createElement('div');
+        overlay.id = 'tech-tree-overlay';
+        overlay.innerHTML = `
+            <div id="tech-tree-panel">
+                <div id="tech-tree-header">
+                    <h2>RESEARCH TREE</h2>
+                    <div id="research-points-display">Research Points: <span id="rp-value">0</span></div>
+                    <button id="close-tech-tree">✕</button>
+                </div>
+                <canvas id="tech-canvas"></canvas>
+                <div id="tech-nodes-container"></div>
             </div>
         `;
+        document.body.appendChild(overlay);
 
-        leftPanel.insertBefore(section, leftPanel.firstChild);
+        document.getElementById('close-tech-tree').onclick = () => this.toggleTechTree();
+
         this.updateTechDisplay();
     },
 
+    toggleTechTree() {
+        this.isOpen = !this.isOpen;
+        const overlay = document.getElementById('tech-tree-overlay');
+        overlay.style.display = this.isOpen ? 'flex' : 'none';
+
+        if (this.isOpen) {
+            game.paused = true;
+            this.updateTechDisplay();
+            this.drawConnections();
+        } else {
+            game.paused = false;
+        }
+    },
+
     updateTechDisplay() {
-        const container = document.getElementById('tech-tree-container');
+        const container = document.getElementById('tech-nodes-container');
         if (!container) return;
 
         container.innerHTML = '';
+        document.getElementById('rp-value').textContent = Math.floor(game.researchPoints);
 
         Object.keys(TECHNOLOGIES).forEach(techKey => {
             const tech = TECHNOLOGIES[techKey];
@@ -129,29 +522,128 @@ const TechTree = {
             const canResearch = !isUnlocked && this.canResearch(techKey);
             const requirementsMet = this.requirementsMet(techKey);
 
-            const techDiv = document.createElement('div');
-            techDiv.className = `tech-option ${isUnlocked ? 'tech-unlocked' : ''} ${!requirementsMet ? 'tech-locked' : ''}`;
+            const node = document.createElement('div');
+            node.className = `tech-node ${isUnlocked ? 'unlocked' : ''} ${!requirementsMet ? 'locked' : ''}`;
+            node.style.left = tech.position.x + 'px';
+            node.style.top = tech.position.y + 'px';
+            node.setAttribute('data-tech', techKey);
 
             if (canResearch && requirementsMet) {
-                techDiv.onclick = () => this.researchTech(techKey);
+                node.onclick = () => {
+                    this.researchTech(techKey);
+                    this.drawConnections();
+                };
             }
 
-            const reqText = tech.requires.length > 0
-                ? `<div class="tech-requires">Requires: ${tech.requires.map(r => TECHNOLOGIES[r].name).join(', ')}</div>`
-                : '';
-
-            techDiv.innerHTML = `
-                <div class="tech-header">
-                    <span class="tech-icon">${tech.icon}</span>
-                    <span class="tech-name">${tech.name}</span>
-                    ${isUnlocked ? '<span class="tech-check">✓</span>' : ''}
-                </div>
-                <div class="tech-description">${tech.description}</div>
-                ${reqText}
-                <div class="tech-cost">${tech.cost.food}F, ${tech.cost.metal}M, ${tech.cost.energy}E</div>
+            node.innerHTML = `
+                <div class="tech-node-icon">${tech.icon}</div>
+                <div class="tech-node-name">${tech.name}</div>
+                <div class="tech-node-desc">${tech.description}</div>
+                <div class="tech-node-cost">${tech.cost} RP</div>
+                ${isUnlocked ? '<div class="tech-node-check">✓</div>' : ''}
             `;
 
-            container.appendChild(techDiv);
+            container.appendChild(node);
+        });
+    },
+
+    drawConnections() {
+        const canvas = document.getElementById('tech-canvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = 1150;
+        canvas.height = 568;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        Object.keys(TECHNOLOGIES).forEach(techKey => {
+            const tech = TECHNOLOGIES[techKey];
+
+            if (tech.requires.length === 0) return;
+
+            const toX = tech.position.x;
+            const toY = tech.position.y;
+
+            if (tech.requires.length === 1) {
+                const reqKey = tech.requires[0];
+                const fromTech = TECHNOLOGIES[reqKey];
+                const isFromUnlocked = this.unlockedTechs.includes(reqKey);
+                const isToUnlocked = this.unlockedTechs.includes(techKey);
+                const bothUnlocked = isFromUnlocked && isToUnlocked;
+
+                const fromX = fromTech.position.x + 120;
+                const fromY = fromTech.position.y;
+
+                ctx.beginPath();
+                ctx.moveTo(fromX, fromY);
+                ctx.lineTo(toX, toY);
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = bothUnlocked ? '#00ff00' : 'rgba(255,255,255,0.3)';
+
+                if (bothUnlocked) {
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = '#00ff00';
+                } else {
+                    ctx.shadowBlur = 0;
+                }
+
+                ctx.stroke();
+            } else {
+                const avgX = tech.requires.reduce((sum, reqKey) => sum + TECHNOLOGIES[reqKey].position.x, 0) / tech.requires.length + 60;
+                const avgY = tech.requires.reduce((sum, reqKey) => sum + TECHNOLOGIES[reqKey].position.y, 0) / tech.requires.length;
+
+                const convergenceX = toX - 60;
+                const convergenceY = toY;
+
+                tech.requires.forEach(reqKey => {
+                    const fromTech = TECHNOLOGIES[reqKey];
+                    const isFromUnlocked = this.unlockedTechs.includes(reqKey);
+                    const isToUnlocked = this.unlockedTechs.includes(techKey);
+                    const allUnlocked = tech.requires.every(r => this.unlockedTechs.includes(r)) && isToUnlocked;
+
+                    const fromX = fromTech.position.x + 120;
+                    const fromY = fromTech.position.y;
+
+                    ctx.beginPath();
+                    ctx.moveTo(fromX, fromY);
+                    ctx.lineTo(convergenceX, convergenceY);
+                    ctx.lineWidth = 3;
+                    ctx.strokeStyle = allUnlocked ? '#00ff00' : 'rgba(255,255,255,0.3)';
+
+                    if (allUnlocked) {
+                        ctx.shadowBlur = 10;
+                        ctx.shadowColor = '#00ff00';
+                    } else {
+                        ctx.shadowBlur = 0;
+                    }
+
+                    ctx.stroke();
+                });
+
+                const allReqsUnlocked = tech.requires.every(r => this.unlockedTechs.includes(r));
+                const isToUnlocked = this.unlockedTechs.includes(techKey);
+                const allUnlocked = allReqsUnlocked && isToUnlocked;
+
+                ctx.beginPath();
+                ctx.moveTo(convergenceX, convergenceY);
+                ctx.lineTo(toX, toY);
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = allUnlocked ? '#00ff00' : 'rgba(255,255,255,0.3)';
+
+                if (allUnlocked) {
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = '#00ff00';
+                } else {
+                    ctx.shadowBlur = 0;
+                }
+
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.arc(convergenceX, convergenceY, 6, 0, Math.PI * 2);
+                ctx.fillStyle = allUnlocked ? '#00ff00' : 'rgba(255,255,255,0.5)';
+                ctx.fill();
+            }
         });
     },
 
@@ -162,7 +654,7 @@ const TechTree = {
 
     canResearch(techKey) {
         const tech = TECHNOLOGIES[techKey];
-        return hasResources(tech.cost) && this.requirementsMet(techKey);
+        return game.researchPoints >= tech.cost && this.requirementsMet(techKey);
     },
 
     researchTech(techKey) {
@@ -173,13 +665,14 @@ const TechTree = {
         }
 
         const tech = TECHNOLOGIES[techKey];
-        spendResources(tech.cost);
+        game.researchPoints -= tech.cost;
         this.unlockedTechs.push(techKey);
 
         addMessage(`Researched: ${tech.name}!`, 'success');
         AudioManager.playSFX('sfx-success', 0.7);
 
         this.updateTechDisplay();
+        this.drawConnections();
     },
 
     getTechBonus(effectType) {
@@ -191,9 +684,5 @@ const TechTree = {
             }
         });
         return totalBonus;
-    },
-
-    hasTech(techKey) {
-        return this.unlockedTechs.includes(techKey);
     }
 };

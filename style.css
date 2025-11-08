@@ -1315,3 +1315,139 @@ button.active { background: #00ff00; color: #000; border-color: #00ff00; }
     opacity: 0.8;
     color: #4CAF50;
 }
+
+#tech-tree-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.95);
+    z-index: 10000;
+    display: none;
+    justify-content: center;
+    align-items: center;
+}
+
+#tech-tree-panel {
+    width: 1150px;
+    height: 650px;
+    background: linear-gradient(135deg, #0a0a2e, #16213e);
+    border: 3px solid #00ff00;
+    border-radius: 15px;
+    position: relative;
+    box-shadow: 0 0 50px rgba(0, 255, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+}
+
+#tech-tree-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 2px solid #00ff00;
+}
+
+#tech-tree-header h2 {
+    color: #00ff00;
+    margin: 0;
+}
+
+#research-points-display {
+    font-size: 18px;
+    color: #00ff00;
+    font-weight: bold;
+}
+
+#close-tech-tree {
+    width: 40px;
+    height: 40px;
+    font-size: 24px;
+    background: rgba(255, 0, 0, 0.3);
+    border: 2px solid #ff4400;
+}
+
+#tech-canvas {
+    position: absolute;
+    top: 82px;
+    left: 0;
+    pointer-events: none;
+}
+
+#tech-nodes-container {
+    position: relative;
+    width: 1150px;
+    height: 568px;
+    margin-top: 82px;
+    overflow: hidden;
+}
+
+.tech-node {
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    background: rgba(0, 0, 50, 0.8);
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    padding: 5px;
+}
+
+.tech-node:hover:not(.locked):not(.unlocked) {
+    transform: scale(1.1);
+    border-color: #00ff00;
+    box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+}
+
+.tech-node.unlocked {
+    background: rgba(0, 100, 0, 0.5);
+    border-color: #00ff00;
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.6);
+}
+
+.tech-node.locked {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.tech-node-icon {
+    font-size: 28px;
+    margin-bottom: 3px;
+}
+
+.tech-node-name {
+    font-size: 9px;
+    font-weight: bold;
+    color: #00ff00;
+    text-align: center;
+    margin-bottom: 2px;
+    line-height: 1.1;
+}
+
+.tech-node-desc {
+    font-size: 7px;
+    text-align: center;
+    opacity: 0.8;
+    margin-bottom: 2px;
+    line-height: 1.1;
+}
+
+.tech-node-cost {
+    font-size: 8px;
+    color: #4CAF50;
+}
+
+.tech-node-check {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    color: #00ff00;
+    font-size: 20px;
+    font-weight: bold;
+}
