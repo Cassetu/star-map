@@ -1241,3 +1241,77 @@ button.active { background: #00ff00; color: #000; border-color: #00ff00; }
     position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
     font-size: 9px; font-weight: bold; color: #fff; text-shadow: 1px 1px 2px #000;
 }
+#tech-tree-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.tech-option {
+    background: rgba(100, 150, 255, 0.1);
+    border: 2px solid rgba(100, 150, 255, 0.3);
+    border-radius: 5px;
+    padding: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tech-option:hover:not(.tech-unlocked):not(.tech-locked) {
+    background: rgba(100, 150, 255, 0.2);
+    border-color: rgba(100, 150, 255, 0.5);
+}
+
+.tech-option.tech-unlocked {
+    background: rgba(0, 255, 0, 0.15);
+    border-color: #00ff00;
+    cursor: default;
+}
+
+.tech-option.tech-locked {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.tech-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 5px;
+}
+
+.tech-icon {
+    font-size: 18px;
+}
+
+.tech-name {
+    font-weight: bold;
+    color: #4da6ff;
+    font-size: 11px;
+    flex: 1;
+}
+
+.tech-check {
+    color: #00ff00;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.tech-description {
+    font-size: 9px;
+    opacity: 0.9;
+    margin-bottom: 5px;
+    line-height: 1.3;
+}
+
+.tech-requires {
+    font-size: 8px;
+    opacity: 0.7;
+    margin-bottom: 5px;
+    color: #ffaa00;
+}
+
+.tech-cost {
+    font-size: 9px;
+    opacity: 0.8;
+    color: #4CAF50;
+}

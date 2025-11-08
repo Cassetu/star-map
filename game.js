@@ -976,8 +976,16 @@ function upgradeCity(cityId) {
     if (!city || city.isRebel) return;
 
     const upgradeCost = city.upgradeLevel === 0 ?
-        { food: 100, metal: 150, energy: 50 } :
-        { food: 200, metal: 300, energy: 100 };
+        {
+            food: Math.floor(100 * (1 - TechTree.getTechBonus('upgradeCost'))),
+            metal: Math.floor(150 * (1 - TechTree.getTechBonus('upgradeCost'))),
+            energy: Math.floor(50 * (1 - TechTree.getTechBonus('upgradeCost')))
+        } :
+        {
+            food: Math.floor(200 * (1 - TechTree.getTechBonus('upgradeCost'))),
+            metal: Math.floor(300 * (1 - TechTree.getTechBonus('upgradeCost'))),
+            energy: Math.floor(100 * (1 - TechTree.getTechBonus('upgradeCost')))
+        };
     if (!hasResources(upgradeCost)) {
         addMessage('Not enough resources!', 'warning');
         return;
@@ -1029,6 +1037,7 @@ function migrateFrom(cityId) {
 function startGame() {
     document.getElementById('tutorial').style.display = 'none';
     game.running = true;
+    TechTree.init();
     usedNames = [];
     cityIdCounter = 0;
     tribalIdCounter = 0;
@@ -1270,8 +1279,8 @@ function update() {
                     const baseGrowth = city.isConverted ? 0.3 : 0.5;
                     const specGrowthMod = 1 + CITY_SPECIALIZATIONS[city.specialization].growthBonus;
                     const foodBonus = Math.min(1.5, city.foodStockpile / 50);
-                    const growthRate = (baseGrowth + (featureBonus.growthPenalty * 0.01)) * specGrowthMod * foodBonus;
-                    city.population += Math.max(0.1, growthRate);
+                    const techGrowthBonus = 1 + TechTree.getTechBonus('popGrowth');
+                    const growthRate = (baseGrowth + (featureBonus.growthPenalty * 0.01)) * specGrowthMod * foodBonus * techGrowthBonus;
                 } else {
                     city.population += 0.1;
                 }
@@ -1294,21 +1303,37 @@ function update() {
             const baseProduction = baseRes;
 
             if (city.specialization === 'trade') {
-                game.resources.food += (baseProduction + (featureBonus.foodBonus * 0.01)) * totalProductionMod * 0.4;
-                game.resources.metal += (baseProduction + (featureBonus.metalBonus * 0.01)) * totalProductionMod * 0.3;
-                game.resources.energy += (baseProduction + (featureBonus.energyBonus * 0.01)) * totalProductionMod * 0.3;
+                const foodProd = (baseProduction + (featureBonus.foodBonus * 0.01)) * totalProductionMod * 0.4;
+                const metalProd = (baseProduction + (featureBonus.metalBonus * 0.01)) * totalProductionMod * 0.3;
+                const energyProd = (baseProduction + (featureBonus.energyBonus * 0.01)) * totalProductionMod * 0.3;
+
+                game.resources.food += foodProd * (1 + TechTree.getTechBonus('foodProduction'));
+                game.resources.metal += metalProd * (1 + TechTree.getTechBonus('metalProduction'));
+                game.resources.energy += energyProd * (1 + TechTree.getTechBonus('energyProduction'));
             } else if (city.specialization === 'research') {
-                game.resources.food += (baseProduction + (featureBonus.foodBonus * 0.01)) * totalProductionMod * 0.2;
-                game.resources.metal += (baseProduction + (featureBonus.metalBonus * 0.01)) * totalProductionMod * 0.3;
-                game.resources.energy += (baseProduction + (featureBonus.energyBonus * 0.01)) * totalProductionMod * 0.5;
+                const foodProd = (baseProduction + (featureBonus.foodBonus * 0.01)) * totalProductionMod * 0.2;
+                const metalProd = (baseProduction + (featureBonus.metalBonus * 0.01)) * totalProductionMod * 0.3;
+                const energyProd = (baseProduction + (featureBonus.energyBonus * 0.01)) * totalProductionMod * 0.5;
+
+                game.resources.food += foodProd * (1 + TechTree.getTechBonus('foodProduction'));
+                game.resources.metal += metalProd * (1 + TechTree.getTechBonus('metalProduction'));
+                game.resources.energy += energyProd * (1 + TechTree.getTechBonus('energyProduction'));
             } else if (city.specialization === 'military') {
-                game.resources.food += (baseProduction + (featureBonus.foodBonus * 0.01)) * totalProductionMod * 0.4;
-                game.resources.metal += (baseProduction + (featureBonus.metalBonus * 0.01)) * totalProductionMod * 0.5;
-                game.resources.energy += (baseProduction + (featureBonus.energyBonus * 0.01)) * totalProductionMod * 0.1;
+                const foodProd = (baseProduction + (featureBonus.foodBonus * 0.01)) * totalProductionMod * 0.4;
+                const metalProd = (baseProduction + (featureBonus.metalBonus * 0.01)) * totalProductionMod * 0.5;
+                const energyProd = (baseProduction + (featureBonus.energyBonus * 0.01)) * totalProductionMod * 0.1;
+
+                game.resources.food += foodProd * (1 + TechTree.getTechBonus('foodProduction'));
+                game.resources.metal += metalProd * (1 + TechTree.getTechBonus('metalProduction'));
+                game.resources.energy += energyProd * (1 + TechTree.getTechBonus('energyProduction'));
             } else {
-                game.resources.food += (baseProduction + (featureBonus.foodBonus * 0.01)) * totalProductionMod * 0.4;
-                game.resources.metal += (baseProduction + (featureBonus.metalBonus * 0.01)) * totalProductionMod * 0.3;
-                game.resources.energy += (baseProduction + (featureBonus.energyBonus * 0.01)) * totalProductionMod * 0.3;
+                const foodProd = (baseProduction + (featureBonus.foodBonus * 0.01)) * totalProductionMod * 0.4;
+                const metalProd = (baseProduction + (featureBonus.metalBonus * 0.01)) * totalProductionMod * 0.3;
+                const energyProd = (baseProduction + (featureBonus.energyBonus * 0.01)) * totalProductionMod * 0.3;
+
+                game.resources.food += foodProd * (1 + TechTree.getTechBonus('foodProduction'));
+                game.resources.metal += metalProd * (1 + TechTree.getTechBonus('metalProduction'));
+                game.resources.energy += energyProd * (1 + TechTree.getTechBonus('energyProduction'));
             }
 
             if (city.tradeBoost > 0) {
@@ -2184,9 +2209,9 @@ for (let i = 0; i < 25; i++) {
 function createCity(x, y) {
     const distMult = getDistanceMultiplier(x, y);
     const cityCost = {
-        food: Math.floor(200 * distMult),
-        metal: Math.floor(200 * distMult),
-        energy: Math.floor(100 * distMult)
+        food: Math.floor(200 * distMult * (1 - TechTree.getTechBonus('cityCost'))),
+        metal: Math.floor(200 * distMult * (1 - TechTree.getTechBonus('cityCost'))),
+        energy: Math.floor(100 * distMult * (1 - TechTree.getTechBonus('cityCost')))
     };
 
     if (!hasResources(cityCost)) {
@@ -2758,8 +2783,8 @@ function createRoad(city1, city2) {
 
     const roadCost = {
         food: 0,
-        metal: Math.floor(100 * distMult),
-        energy: Math.floor(50 * distMult)
+        metal: Math.floor(100 * distMult * (1 - TechTree.getTechBonus('roadCost'))),
+        energy: Math.floor(50 * distMult * (1 - TechTree.getTechBonus('roadCost')))
     };
 
     if (!hasResources(roadCost)) {
@@ -3533,8 +3558,8 @@ function endEnhancedDDRBattle() {
                    closestCity.stationedUnits.cavalry * UNIT_TYPES.cavalry.attack +
                    closestCity.stationedUnits.artillery * UNIT_TYPES.artillery.attack);
 
-
     playerAttack *= formation.atkMod;
+    playerAttack *= (1 + TechTree.getTechBonus('attackBonus'));
     playerAttack *= (1 + game.ddrBonus / 100);
     playerAttack *= prediction.distancePenalty;
     playerAttack *= prediction.moraleMod;
@@ -3548,6 +3573,7 @@ function endEnhancedDDRBattle() {
                         closestCity.stationedUnits.artillery * UNIT_TYPES.artillery.defense);
 
     playerDefense *= formation.defMod;
+    playerDefense *= (1 + TechTree.getTechBonus('defenseBonus'));
 
     if (game.activePerks.includes('defensiveGenius')) {
         playerDefense *= 1.25;
@@ -3939,7 +3965,8 @@ addMessage(`${city.name} is at max capacity (8 units)!`, 'warning');
 return;
 }
 const unit = UNIT_TYPES[type];
-const popCost = type === 'infantry' ? 50 : (type === 'cavalry' ? 100 : 10);
+const basePop = type === 'infantry' ? 50 : (type === 'cavalry' ? 100 : 10);
+const popCost = Math.floor(basePop * (1 - TechTree.getTechBonus('recruitmentCost')));
 
 const specMod = CITY_SPECIALIZATIONS[city.specialization].recruitCostMod;
 const finalCost = {
