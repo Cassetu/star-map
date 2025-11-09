@@ -66,6 +66,13 @@ const VictoryConditions = {
         }
     },
 
+    getProgressText() {
+            return Object.keys(this.conditions).map(key => {
+                const condition = this.conditions[key];
+                return `${condition.name}: ${condition.getProgressText()}`;
+            }).join(' | ');
+    },
+
     init() {
         this.createVictoryButton();
         this.createProgressPanel();

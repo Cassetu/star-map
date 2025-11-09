@@ -967,7 +967,7 @@ function selectCity(city) {
         stationedUnitsText += `<p style="font-size: 9px; margin-top: 4px; color: #ff4400;">Military Oppression: -${penalty} happiness/yr</p>`;
     }
 
-    panel.innerHTML = `<h3>${city.name}</h3>${upgradeText}<div class="happiness-bar"><div class="happiness-fill" style="width: ${city.happiness}%; background: ${happinessColor};"></div><div class="happiness-text">${Math.floor(city.happiness)}</div></div><p><strong>Population:</strong> ${Math.floor(city.population)}/${city.maxPopulation}</p>${rebellionText}<p><strong>Status:</strong> ${inZone ? '✓ In Zone' : '⚠ Outside!'}</p><p><strong>Road Bonus:</strong> +${(roadBonus * 100).toFixed(0)}%</p>${featureText}${connectionsText}${stationedUnitsText}${foodText}${entertainmentText}${entertainmentButtons}${governorText}${governorButtons}${emergencyReliefText}${emergencyReliefButton}${specText}${specButtons}${upgradeBtn}${migrateBtn}`;
+    panel.innerHTML = `<h3>${city.name}</h3>${upgradeText}<div class="happiness-bar"><div class="happiness-fill" style="width: ${city.happiness}%; background: ${happinessColor};"></div><div class="happiness-text">${Math.floor(city.happiness)}</div></div><p><strong>Population:</strong> ${Math.floor(city.population)}/${city.maxPopulation}</p>${rebellionText}<p><strong>Status:</strong> ${inZone ? '✓ In Zone' : '⚠ Outside!'}</p><p><strong>Road Bonus:</strong> +${(roadBonus * 100).toFixed(0)}%</p>${featureText}${connectionsText}${stationedUnitsText}${foodText}${entertainmentText}${entertainmentButtons}${governorText}${governorButtons}${specText}${specButtons}${upgradeBtn}${migrateBtn}`;
 
     document.getElementById('build-road-btn').disabled = false;
 }
@@ -1458,13 +1458,13 @@ function update() {
         const featureBonus = getCityFeatureBonus(city);
 
         if (inZone) {
-        if (city.happiness < 75) {
-        city.happiness += 0.15;
-        }
+            if (city.happiness < 75) {
+                city.happiness += 0.15;
+            }
         } else {
-        if (city.happiness > 25) {
-        city.happiness -= 0.25;
-        }
+            if (city.happiness > 25) {
+                city.happiness -= 0.07;
+            }
         }
 
         const totalStationedUnits = city.stationedUnits.infantry + city.stationedUnits.cavalry + city.stationedUnits.artillery;
@@ -1523,7 +1523,7 @@ function update() {
             } else {
                 city.foodStockpile = Math.max(0, city.foodStockpile - 1);
                 if (city.foodStockpile < 10) {
-                    city.happiness -= 0.2;
+                    city.happiness -= 0.05;
                 }
             }
 
@@ -4573,14 +4573,6 @@ function updateUI() {
 
     updateTribalRelation();
     updateSpaceportPanel();
-
-    const progressDisplay = document.getElementById('victory-progress-display') || (() => {
-        const div = document.createElement('div');
-        div.id = 'victory-progress-display';
-        document.body.appendChild(div);
-        return div;
-    })();
-    progressDisplay.textContent = `Victory: ${VictoryConditions.conditions[VictoryConditions.selectedCondition].name} - ${VictoryConditions.getProgressText()}`;
 }
 
     if (game.tribalTradeCooldown > 0) {
