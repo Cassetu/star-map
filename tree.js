@@ -726,6 +726,12 @@ const TechTree = {
         if (tech.effect === 'maxPopulation') {
             game.cities.forEach(city => {
                 city.maxPopulation = 500 + this.getTechBonus('maxPopulation');
+                const cityEl = document.getElementById(`city-${city.id}`);
+                if (cityEl) {
+                    const oldBuildings = cityEl.querySelector('.city-buildings');
+                    if (oldBuildings) oldBuildings.remove();
+                    generateCityBuildings(cityEl, city);
+                }
                 updateCityDisplay(city);
             });
         }

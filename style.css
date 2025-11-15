@@ -480,6 +480,37 @@ body { font-family: 'Courier New', monospace; background: #0a0a0a; color: #fff; 
     pointer-events: none; transition: left 2s linear; z-index: 15;
 }
 
+.city-label {
+    position: absolute;
+    top: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    white-space: nowrap;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 3px 8px;
+    border-radius: 3px;
+    color: #fff;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    z-index: 100;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.city:hover .city-label {
+    opacity: 1;
+}
+
+.city {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    transition: all 0.3s;
+    z-index: 20;
+}
+
 .city-radius {
     position: absolute; border: 2px dashed rgba(255, 255, 255, 0.5); border-radius: 50%;
     pointer-events: none; background: radial-gradient(circle, rgba(0, 255, 0, 0.1), transparent 70%);

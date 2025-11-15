@@ -1344,7 +1344,7 @@ const startingCity = {
 game.cities.push(startingCity);
 
 const cityEl = document.createElement('div');
-cityEl.className = `city city-${city.zoneType}${city.specialization !== 'none' ? ' city-' + city.specialization : ''}`;
+cityEl.className = `city city-${startingCity.zoneType}${startingCity.specialization !== 'none' ? ' city-' + startingCity.specialization : ''}`;
 cityEl.id = `city-${startingCity.id}`;
 cityEl.style.left = '50%';
 cityEl.style.top = '50%';
@@ -2618,11 +2618,21 @@ function generateCityBuildings(cityEl, city) {
     const buildingsContainer = document.createElement('div');
     buildingsContainer.className = 'city-buildings';
 
-    const upgradeLevel = city.upgradeLevel || 0;
+    let housingLevel = 0;
+    if (TechTree.unlockedTechs.includes('skyscrapers')) {
+        housingLevel = 3;
+    } else if (TechTree.unlockedTechs.includes('apartments')) {
+        housingLevel = 2;
+    } else if (TechTree.unlockedTechs.includes('basicHousing')) {
+        housingLevel = 1;
+    } else {
+        housingLevel = 0;
+    }
+
     const specialization = city.specialization || 'none';
     const entertainmentCount = city.entertainmentDistricts ? city.entertainmentDistricts.length : 0;
 
-    if (upgradeLevel === 0) {
+    if (housingLevel === 0) {
         for (let i = 0; i < 5; i++) {
             const hut = document.createElement('div');
             hut.className = 'building-hut';
@@ -2634,12 +2644,24 @@ function generateCityBuildings(cityEl, city) {
             hut.style.top = `${20 + y}px`;
             buildingsContainer.appendChild(hut);
         }
-    } else if (upgradeLevel === 1) {
+    } else if (housingLevel === 1) {
         for (let i = 0; i < 8; i++) {
             const house = document.createElement('div');
             house.className = 'building-house';
             const angle = (i / 8) * Math.PI * 2;
             const radius = 12 + (i % 2) * 4;
+            const x = Math.cos(angle) * radius;
+            const y = Math.sin(angle) * radius;
+            house.style.left = `${20 + x}px`;
+            house.style.top = `${20 + y}px`;
+            buildingsContainer.appendChild(house);
+        }
+    } else if (housingLevel === 2) {
+        for (let i = 0; i < 10; i++) {
+            const house = document.createElement('div');
+            house.className = 'building-house';
+            const angle = (i / 10) * Math.PI * 2;
+            const radius = 12 + (i % 3) * 3;
             const x = Math.cos(angle) * radius;
             const y = Math.sin(angle) * radius;
             house.style.left = `${20 + x}px`;
@@ -2667,7 +2689,7 @@ function generateCityBuildings(cityEl, city) {
         }
     }
 
-    if (specialization === 'military' && upgradeLevel >= 1) {
+    if (specialization === 'military' && housingLevel >= 1) {
         const fort = document.createElement('div');
         fort.className = 'specialization-military-fort';
         fort.innerHTML = `
@@ -2679,7 +2701,7 @@ function generateCityBuildings(cityEl, city) {
         buildingsContainer.appendChild(fort);
     }
 
-    if (specialization === 'trade' && upgradeLevel >= 1) {
+    if (specialization === 'trade' && housingLevel >= 1) {
         const bank = document.createElement('div');
         bank.className = 'specialization-trade-bank';
         bank.innerHTML = `
@@ -2693,7 +2715,7 @@ function generateCityBuildings(cityEl, city) {
         buildingsContainer.appendChild(bank);
     }
 
-    if (specialization === 'research' && upgradeLevel >= 1) {
+    if (specialization === 'research' && housingLevel >= 1) {
         const library = document.createElement('div');
         library.className = 'specialization-research-library';
         library.innerHTML = `
@@ -2751,7 +2773,6 @@ function generateCityBuildings(cityEl, city) {
 
     cityEl.insertBefore(buildingsContainer, cityEl.firstChild);
 }
-
 
 function gatherResources() {
     if (game.gatherCooldown > 0) return;
