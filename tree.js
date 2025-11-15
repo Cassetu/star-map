@@ -330,7 +330,7 @@ const TECHNOLOGIES = {
 
     dirtRoads: {
         name: 'Dirt Roads',
-        description: 'Roads cost -25%',
+        description: 'Roads cost -25%, improved appearance',
         cost: 35,
         icon: '🛤️',
         requires: [],
@@ -341,7 +341,7 @@ const TECHNOLOGIES = {
     },
     pavedRoads: {
         name: 'Paved Roads',
-        description: 'Roads cost -50%',
+        description: 'Roads cost -50%, stone construction',
         cost: 80,
         icon: '🛣️',
         requires: ['dirtRoads'],
@@ -352,7 +352,7 @@ const TECHNOLOGIES = {
     },
     highways: {
         name: 'Highways',
-        description: 'Roads give +10% bonus',
+        description: 'Roads give +10% bonus, modern design',
         cost: 150,
         icon: '🚗',
         requires: ['pavedRoads'],
@@ -732,6 +732,13 @@ const TechTree = {
 
         addMessage(`Researched: ${tech.name}!`, 'success');
         AudioManager.playSFX('sfx-success', 0.7);
+
+        if (tech.effect === 'roadCost' || tech.effect === 'roadBonus') {
+            updateAllRoadStyles();
+        }
+
+        updateRecruitButtonText();
+        updateRoadButtonText();
 
         this.updateTechDisplay();
         this.drawConnections();

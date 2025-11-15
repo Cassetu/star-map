@@ -9,6 +9,7 @@ const VictoryConditions = {
             name: 'Peaceful Evacuation',
             icon: '🚀',
             description: 'Build the Spaceport and evacuate to a stable planet',
+            achieved: false,
             getProgress: () => game.spaceportProgress,
             getProgressText: () => `${Math.floor(game.spaceportProgress)}%`,
             check: () => game.spaceportProgress >= 100
@@ -17,6 +18,7 @@ const VictoryConditions = {
             name: 'Total Domination',
             icon: '⚔️',
             description: 'Conquer all tribal cities',
+            achieved: false,
             getProgress: () => {
                 const total = game.tribalCities.length;
                 const conquered = game.tribalCities.filter(t => t.isConverted).length;
@@ -33,6 +35,7 @@ const VictoryConditions = {
             name: 'Diplomatic Victory',
             icon: '🤝',
             description: 'Maintain 100 reputation with tribals for 10 years',
+            achieved: false,
             getProgress: () => (VictoryConditions.diplomaticYearsCount / VictoryConditions.diplomaticYearsNeeded) * 100,
             getProgressText: () => `${VictoryConditions.diplomaticYearsCount}/${VictoryConditions.diplomaticYearsNeeded} years`,
             check: () => {
@@ -51,6 +54,7 @@ const VictoryConditions = {
             name: 'Economic Supremacy',
             icon: '💰',
             description: 'Accumulate 50,000 total resources',
+            achieved: false,
             getProgress: () => {
                 const total = game.resources.food + game.resources.metal + game.resources.energy;
                 return Math.min(100, (total / VictoryConditions.economicTarget) * 100);
@@ -133,13 +137,16 @@ const VictoryConditions = {
             const progress = condition.getProgress();
             const progressText = condition.getProgressText();
 
+            const canClaim = condition.check();
+            const isAchieved = condition.achieved;
+
             const item = document.createElement('div');
             item.className = 'victory-condition-item';
             item.innerHTML = `
                 <div class="victory-condition-header">
                     <span class="victory-condition-icon">${condition.icon}</span>
                     <div class="victory-condition-info">
-                        <div class="victory-condition-name">${condition.name}</div>
+                        <div class="victory-condition-name">${condition.name} ${isAchieved ? '✓' : ''}</div>
                         <div class="victory-condition-desc">${condition.description}</div>
                     </div>
                 </div>
@@ -149,6 +156,7 @@ const VictoryConditions = {
                     </div>
                     <div class="victory-progress-text">${progressText}</div>
                 </div>
+                ${isAchieved ? `<button class="action-btn" onclick="VictoryConditions.claimVictory('${key}')" style="margin-top: 10px; width: 100%; background: #00ff00; color: #000; font-weight: bold;">CLAIM VICTORY!</button>` : ''}
             `;
             container.appendChild(item);
         });
@@ -159,10 +167,22 @@ const VictoryConditions = {
 
         Object.keys(this.conditions).forEach(key => {
             const condition = this.conditions[key];
-            if (condition.check()) {
-                this.triggerVictory(key);
+            if (condition.check() && !condition.achieved) {
+                condition.achieved = true;
+                addMessage(`🎉 ${condition.name} is complete! Open Victory menu to claim.`, 'success');
+                AudioManager.playSFX('sfx-success', 0.8);
             }
         });
+    },
+
+    claimVictory(conditionKey) {
+        const condition = this.conditions[conditionKey];
+        if (!condition.achieved) {
+            addMessage('Victory condition not yet complete!', 'warning');
+            return;
+        }
+
+        this.triggerVictory(conditionKey);
     },
 
     triggerVictory(conditionKey) {

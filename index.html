@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
-    <title>Equinox Line - V1.1</title>
+    <title>Equinox Line - V1.1.1</title>
     <link href="style.css" rel="stylesheet"/>
 </head>
 <audio id="bg-music" loop>
@@ -47,6 +47,7 @@
 <script src="audio.js"></script>
 <script src="win.js"></script>
 <script src="tree.js"></script>
+<script src="wonders.js"></script>
 
 <body>
 <div id="minimap-container">
@@ -340,134 +341,308 @@
         <h2>Welcome to Equinox Line</h2>
         <p>Manage civilization on a unique planet with a shifting habitable zone!</p>
 
-        <h3>Resources (FME System):</h3>
+        <h3>🎯 Victory Conditions:</h3>
         <ul>
-            <li><strong>Food (F):</strong> Supports population growth and unit recruitment</li>
-            <li><strong>Metal (M):</strong> Used for buildings, roads, and military equipment</li>
-            <li><strong>Energy (E):</strong> Powers advanced technology and infrastructure</li>
-            <li>All costs and production show specific FME amounts (e.g., "100F, 50M, 25E")</li>
-            <li>Cities generate all three resources based on their location and nearby features</li>
+            <li><strong>🚀 Peaceful Evacuation:</strong> Build the Spaceport and complete construction (10 years)</li>
+            <li><strong>⚔️ Total Domination:</strong> Conquer all tribal cities through military force</li>
+            <li><strong>🤝 Diplomatic Victory:</strong> Maintain 100 reputation with tribals for 10 consecutive years</li>
+            <li><strong>💰 Economic Supremacy:</strong> Accumulate 50,000 total resources (Food + Metal + Energy)</li>
+            <li><em>Note: You can achieve multiple victories - choose which one to claim!</em></li>
         </ul>
 
-        <h3>Victory Condition:</h3>
+        <h3>🌍 The Planet & Habitable Zone:</h3>
         <ul>
-            <li>Reach 2000 population & 10,000 total resources (F+M+E combined)</li>
-            <li>Build the Spaceport and complete construction</li>
-            <li>Spaceport costs 500 total resources/year during construction</li>
+            <li><strong>The habitable zone MOVES:</strong> Shifts left/right constantly (every ~2 minutes reverses)</li>
+            <li><strong>Cities in zone:</strong> Population grows, resources produce normally, happiness rises to 75</li>
+            <li><strong>Cities outside zone:</strong> Population dies rapidly, happiness falls to 25, needs food stockpiles</li>
+            <li><strong>Hot zone (left/red):</strong> Desert terrain, tribals thrive here</li>
+            <li><strong>Cold zone (right/blue):</strong> Ice terrain, harsh conditions</li>
+            <li><strong>Strategy tip:</strong> Place cities near zone edges so they stay productive longer</li>
         </ul>
 
-        <h3>Terrain Features & Resources:</h3>
+        <h3>💰 Resources (FME System):</h3>
         <ul>
-            <li><strong>Sacred Groves:</strong> +15F, +5E - Best food source!</li>
-            <li><strong>Lakes:</strong> +10F, +5E - Excellent for food production</li>
-            <li><strong>Forests:</strong> +5F, +3M - Balanced resource mix</li>
-            <li><strong>Plains:</strong> +4F, +2M, +1 pop/yr - Good for growth</li>
-            <li><strong>Canyons:</strong> +8M, +2E - Best for metal production</li>
-            <li><strong>Ice Fields:</strong> +3M, +2E - Cold zone resources</li>
-            <li><strong>Deserts:</strong> -2 pop/yr - Avoid building near these!</li>
-            <li><strong>Feature Sharing:</strong> Multiple cities near the same feature split its bonuses</li>
+            <li><strong>Food (F):</strong> Feeds population, recruits units, trades</li>
+            <li><strong>Metal (M):</strong> Builds cities/roads/fortifications, recruits heavy units</li>
+            <li><strong>Energy (E):</strong> Powers advanced units/buildings, required for high-tech</li>
+            <li><strong>Resource costs shown clearly:</strong> e.g., "200F, 200M, 100E" means 200 Food, 200 Metal, 100 Energy</li>
+            <li><strong>Distance penalty:</strong> Building cities far from existing ones costs 1.5x-3x resources!</li>
         </ul>
 
-        <h3>Combat System:</h3>
+        <h3>🏙️ City Management:</h3>
         <ul>
-            <li><strong>DDR Battles:</strong> Attack tribal cities to trigger rhythm-based combat</li>
-            <li>Press arrow keys when they light up - build combos for damage multipliers (up to +100%)</li>
-            <li>Your troops march from the nearest city (or select multiple cities)</li>
-            <li><strong>Reinforcements:</strong> Tribals send troops from nearby allies to cities under attack</li>
-            <li><strong>Defense:</strong> Station units in your cities to protect against tribal counterattacks</li>
+            <li><strong>Placement:</strong> Costs 200F, 200M, 100E base (more if far from cities). Must be 5% apart</li>
+            <li><strong>Population:</strong> Grows in habitable zone (0.5/tick base), dies outside zone rapidly</li>
+            <li><strong>Max Population:</strong> Starts at 500, increases with Housing tech</li>
+            <li><strong>Happiness (0-100):</strong> Cities at 0 happiness REBEL and stop producing!</li>
+            <li><strong>Rebellion:</strong> Conquered tribal cities rebel for 30 seconds, produce 70% resources</li>
         </ul>
 
-        <h3>Tribal Diplomacy:</h3>
+        <h3>🏗️ City Upgrades:</h3>
         <ul>
-            <li><strong>Reputation Matters:</strong> 0-20: War | 21-40: Hostile | 41-60: Neutral | 61-80: Friendly |
-                81-100: Allied
+            <li><strong>Fortification:</strong>
+                <ul>
+                    <li>Level 1: 100F, 150M, 50E - Reduces pop death 50% outside zone</li>
+                    <li>Level 2: 200F, 300M, 100E - Reduces pop death 75% outside zone</li>
+                </ul>
             </li>
-            <li><strong>Building too close</strong> (within 10% distance) angers tribes (-10 rep per city)</li>
-            <li><strong>Military buildup</strong> (over 10 of any unit type) alarms them (-10 rep, once per type)</li>
-            <li><strong>TRIBAL INVASION:</strong> If they have 50+ troops, you have 3+ cities nearby, and rep < 50,
-                they'll declare war!
+            <li><strong>Specializations (choose ONE per city):</strong>
+                <ul>
+                    <li>⚔️ Military Fortress (200F, 250M, 50E): Units 25% cheaper, -20% resources, -10% growth</li>
+                    <li>💰 Trade Hub (150F, 200M, 50E): +50% resources, units 20% more expensive</li>
+                    <li>🔬 Research Center (200F, 150M, 250E): +20% resources, +30% growth, generates research</li>
+                </ul>
             </li>
-            <li>Tribals grow population slowly and recruit their own military units</li>
-            <li>They reposition forces to frontline cities when you expand near them</li>
-            <li>Tribes expand: roads every 10 years, cities every 30-40 years</li>
-        </ul>
-
-        <h3>Happiness System:</h3>
-        <ul>
-            <li><strong>In Habitable Zone:</strong> Happiness rises to 75 naturally</li>
-            <li><strong>Outside Zone:</strong> Happiness falls to 25 naturally</li>
-            <li><strong>Laws & Battles:</strong> Can push happiness below 25 or above 75</li>
-            <li><strong>At 0 Happiness:</strong> City rebels and stops producing!</li>
-            <li><strong>War Declaration:</strong> All cities lose 25 happiness immediately</li>
-            <li><strong>Military Oppression:</strong> Over 4 units in a city decreases happiness</li>
-            <li>Use Philanthropy to boost happiness across all cities</li>
-        </ul>
-
-        <h3>City Management:</h3>
-        <ul>
-            <li><strong>Placement:</strong> Cities cost 200F, 200M, 100E and must be at least 5% apart</li>
-            <li><strong>Fortification:</strong> Upgrade cities (Lvl 1: 100F, 150M, 50E | Lvl 2: 200F, 300M, 100E) to
-                reduce population loss and improve defense
+            <li><strong>Entertainment Districts (max 3 per city):</strong>
+                <ul>
+                    <li>🎭 Theater (100F, 150M, 50E): +0.5 happiness/year</li>
+                    <li>🏟️ Arena (150F, 200M, 75E): +0.7 happiness/year</li>
+                    <li>🌳 Public Garden (80F, 100M, 30E): +0.4 happiness/year</li>
+                </ul>
             </li>
-            <li><strong>Migration:</strong> Move 50 population from endangered cities to safe ones (30F, 10M, 5E)</li>
-            <li><strong>Roads:</strong> Connect cities for +20% resource bonus (100M, 50E per road)</li>
-            <li><strong>Features:</strong> Cities gain bonuses from ALL nearby terrain features - place strategically!
+            <li><strong>Governors (choose ONE per city):</strong>
+                <ul>
+                    <li>😊 Benevolent (200F, 100M, 50E): +2 happiness/yr, -10% resources</li>
+                    <li>⚔️ Military (150F, 150M, 75E): +30% defense, -1 happiness/yr</li>
+                    <li>💰 Economist (250F, 200M, 100E): +25% resources, -10% defense</li>
+                    <li>🤝 Diplomat (200F, 150M, 150E): +1.5 happiness/yr, +10% resources</li>
+                </ul>
             </li>
-            <li><strong>Conquered Cities:</strong> Start in rebellion for 30 seconds, produce 70% resources during this
-                time
+            <li><strong>Emergency Relief (200M, 150E):</strong> Prevents happiness from dropping below 15</li>
+        </ul>
+
+        <h3>🍞 Food Stockpile System:</h3>
+        <ul>
+            <li><strong>Each city has food storage (0-100):</strong> Acts as buffer for harsh conditions</li>
+            <li><strong>Auto-feed (toggle on/off):</strong> Automatically uses global food to maintain stockpile</li>
+            <li><strong>Consumption rate:</strong> Shown in city panel, increases with population and outside zone</li>
+            <li><strong>Low stockpile effects:</strong> Below 20 = slower growth, below 10 = happiness penalty</li>
+            <li><strong>Empty stockpile:</strong> Population dies MUCH faster outside zone</li>
+            <li><strong>Manual food aid:</strong> Send +20 or +50 food directly to cities from global reserves</li>
+        </ul>
+
+        <h3>😊 Happiness System (CRITICAL!):</h3>
+        <ul>
+            <li><strong>Base drift:</strong> In zone → rises to 75 | Outside zone → falls to 25</li>
+            <li><strong>Laws modify it:</strong> Harsh Labor = -2/yr, Relaxed Work = +1/yr, etc.</li>
+            <li><strong>Military oppression:</strong> Over 4 units in city = -0.5 happiness/yr per extra unit</li>
+            <li><strong>Entertainment districts:</strong> Add +0.4 to +0.7 happiness/yr each</li>
+            <li><strong>Road networks:</strong> 2+ connections = +3/yr, 3+ = +5/yr, 4+ = +7/yr, 5+ = +10/yr</li>
+            <li><strong>War declaration:</strong> ALL cities lose 25 happiness instantly!</li>
+            <li><strong>At 0 happiness:</strong> City enters REBELLION - stops all production!</li>
+            <li><strong>Emergency relief:</strong> Prevents happiness from going below 15</li>
+        </ul>
+
+        <h3>🛣️ Road Networks:</h3>
+        <ul>
+            <li><strong>Cost:</strong> 100M, 50E base (more for distant cities)</li>
+            <li><strong>Bonus per connection:</strong> 1 = +20% resources | 2 = +35% | 3+ = +50%</li>
+            <li><strong>Network happiness bonus:</strong> Multiple connections add happiness/year (see above)</li>
+            <li><strong>Connected cities:</strong> Can send reinforcements during battles</li>
+            <li><strong>Visual indicator:</strong> Cities with 3+ connections show a pulsing green beacon</li>
+        </ul>
+
+        <h3>🌲 Terrain Features (VERY IMPORTANT!):</h3>
+        <p><strong>Cities get bonuses from ALL features within range (12% radius):</strong></p>
+        <ul>
+            <li><strong>🌳 Sacred Groves:</strong> +15F, +5E - Best food source!</li>
+            <li><strong>💧 Lakes:</strong> +10F, +5E - Excellent for food</li>
+            <li><strong>🌲 Forests:</strong> +5F, +3M - Balanced mix</li>
+            <li><strong>🌾 Plains:</strong> +4F, +2M, +1 pop/yr - Good for growth</li>
+            <li><strong>🌸 Meadows:</strong> +8F, +1M, +1E, +2 pop/yr - Great all-around</li>
+            <li><strong>🍎 Orchards:</strong> +10F, +2E, +1 pop/yr - Food focus</li>
+            <li><strong>🏔️ Canyons:</strong> +8M, +2E - Best metal source</li>
+            <li><strong>⛏️ Mines:</strong> +10M, +3E, -1 pop/yr - Metal rich but harsh</li>
+            <li><strong>🪨 Quarries:</strong> +12M, -1 pop/yr - Maximum metal output</li>
+            <li><strong>❄️ Ice Fields:</strong> +3M, +2E - Cold zone resources</li>
+            <li><strong>🏔️ Glaciers:</strong> +5F, +8E, -2 pop/yr - Energy in cold</li>
+            <li><strong>🌨️ Tundra:</strong> +3F, +4M, +3E, -1 pop/yr - Balanced cold</li>
+            <li><strong>💎 Crystal Caves:</strong> +5M, +12E - Best energy source!</li>
+            <li><strong>🔥 Geothermal Vents:</strong> +5M, +15E - Maximum energy</li>
+            <li><strong>🌋 Volcanoes:</strong> +15M, +10E, -3 pop/yr - High output, risky</li>
+            <li><strong>🏝️ Oasis:</strong> +12F, +3E, +2 pop/yr - Desert paradise</li>
+            <li><strong>🏛️ Ancient Ruins:</strong> +3F, +8M, +8E - Balanced bonus</li>
+            <li><strong>🏜️ Deserts:</strong> -2 pop/yr - Avoid these!</li>
+            <li><strong>⚠️ FEATURE SHARING:</strong> Multiple cities near same feature SPLIT the bonuses!</li>
+        </ul>
+
+        <h3>🔬 Research Tree:</h3>
+        <ul>
+            <li><strong>Research Points:</strong> Gained slowly over time, faster with Research Centers</li>
+            <li><strong>Tech categories:</strong> Military (attack/defense), Agriculture (food/growth), Industry (metal/energy), Infrastructure (buildings/cities)</li>
+            <li><strong>Key techs to prioritize:</strong>
+                <ul>
+                    <li>Basic Farming → Irrigation → Crop Rotation (food production)</li>
+                    <li>Basic Mining → Deep Mining (metal production)</li>
+                    <li>Basic Housing → Apartments (max population)</li>
+                    <li>Settlement Planning → Urban Planning (cheaper cities)</li>
+                </ul>
+            </li>
+            <li><strong>Tech tree button:</strong> Click "Research" to open full tech tree interface</li>
+        </ul>
+
+        <h3>⚔️ Military System:</h3>
+        <ul>
+            <li><strong>Unit Types:</strong>
+                <ul>
+                    <li>Infantry (5 ATK/3 DEF): 50F, 50M, 0E, 50 pop - Basic troops</li>
+                    <li>Cavalry (12 ATK/5 DEF): 100F, 100M, 50E, 100 pop - Fast attackers</li>
+                    <li>Artillery (20 ATK/2 DEF): 50F, 300M, 150E, 10 pop - Glass cannons</li>
+                </ul>
+            </li>
+            <li><strong>Recruiting:</strong> Select city first, then recruit (max 8 units per city)</li>
+            <li><strong>Stationing:</strong> Units stay in cities for defense or can attack tribals</li>
+            <li><strong>Transfer units:</strong> Move units between cities via "Transfer Units" button</li>
+            <li><strong>Tribal alarm:</strong> Building 11+ of any unit type costs -10 tribal reputation</li>
+        </ul>
+
+        <h3>🎯 Combat System (DDR Battles):</h3>
+        <ul>
+            <li><strong>Battle Planning Screen:</strong>
+                <ul>
+                    <li>Shows power ratio, distance penalty, morale modifier</li>
+                    <li>Choose formation: Offensive (+20% ATK/-10% DEF), Balanced, Defensive (-10% ATK/+20% DEF)</li>
+                    <li>Set retreat threshold: 0%, 25%, 50%, 75% casualties</li>
+                    <li>Scout enemy (50 res) to reveal exact forces</li>
+                    <li>Select Commander Perks (unlock by winning battles)</li>
+                </ul>
+            </li>
+            <li><strong>DDR Minigame:</strong> Press arrow keys when highlighted (15 seconds)</li>
+            <li><strong>Combo system:</strong> Each hit = +10% damage (max +100%!)</li>
+            <li><strong>Reinforcements:</strong> Call during battle if connected to supply lines (300 res)</li>
+            <li><strong>Weather effects:</strong> Fog (late arrows), Sandstorm (vanishing arrows), Frost (slower)</li>
+            <li><strong>Battle phases:</strong> Artillery → Cavalry → Infantry (affects difficulty)</li>
+            <li><strong>Casualties:</strong> Both sides lose units based on damage dealt</li>
+            <li><strong>Retreat:</strong> If threshold reached, save 50% of units that would die</li>
+        </ul>
+
+        <h3>👥 Tribal Diplomacy (COMPLEX!):</h3>
+        <ul>
+            <li><strong>Reputation scale (0-100):</strong>
+                <ul>
+                    <li>0-20: WAR - Tribes attack your cities!</li>
+                    <li>21-40: Hostile - Unfriendly, won't trade</li>
+                    <li>41-60: Neutral - Trade available</li>
+                    <li>61-80: Friendly - Better trade deals</li>
+                    <li>81-100: Allied - Can achieve Diplomatic Victory</li>
+                </ul>
+            </li>
+            <li><strong>Actions & Effects:</strong>
+                <ul>
+                    <li>Trade (80F → 80M): +10 rep, 10-year cooldown</li>
+                    <li>Embassy (200F, 200M, 100E): +20 rep, one-time</li>
+                    <li>Denounce: -30 rep</li>
+                    <li>Declare War: Set rep to 0, all cities lose 25 happiness</li>
+                    <li>Building too close (within 10%): -10 rep per city</li>
+                    <li>Military buildup (11+ units): -10 rep per unit type</li>
+                </ul>
+            </li>
+            <li><strong>⚠️ TRIBAL INVASION TRIGGER:</strong>
+                <ul>
+                    <li>If tribals have 50+ total troops AND</li>
+                    <li>Your rep < 50 AND</li>
+                    <li>You have 3+ cities near tribal territory (within 30%) AND</li>
+                    <li>No peace treaty active...</li>
+                    <li>→ They declare WAR and launch coordinated attacks!</li>
+                </ul>
+            </li>
+            <li><strong>Peace Negotiations:</strong>
+                <ul>
+                    <li>Costs 1000 resources to initiate during war</li>
+                    <li>Tribals make 3 demands over 3 years (accept or reject each)</li>
+                    <li>Demands: Surrender city, disband 30% military, pay 500 tribute, lose happiness</li>
+                    <li>Meeting 0 demands = massive attack! 1 = hostile, 2 = neutral, 3 = friendly</li>
+                    <li>Peace treaty = 7-year protection from war</li>
+                </ul>
             </li>
         </ul>
 
-        <h3>City Specializations:</h3>
+        <h3>🏛️ Tribal Behavior:</h3>
         <ul>
-            <li><strong>Military Fortress (500 total):</strong> 25% cheaper units, -20% resources, -10% growth</li>
-            <li><strong>Trade Hub (400 total):</strong> +50% resources, but units cost 20% more</li>
-            <li><strong>Research Center (600 total):</strong> +20% resources, +30% population growth</li>
-            <li>Specializations affect resource production ratios (see tooltips for details)</li>
+            <li><strong>Expansion:</strong> Build roads every 10 years, new cities every 30-40 years</li>
+            <li><strong>Population:</strong> Grows slowly (+0.2/tick)</li>
+            <li><strong>Military recruitment:</strong>
+                <ul>
+                    <li>Peacetime: 0.3% chance/tick (max 3 recruits/year)</li>
+                    <li>Wartime: 0.9% chance/tick (max 12 recruits/year)</li>
+                </ul>
+            </li>
+            <li><strong>Force positioning:</strong> Moves units to frontline cities near your borders</li>
+            <li><strong>Reinforcements:</strong> Nearby tribal cities (within 25%) send troops to defend attacked cities</li>
+            <li><strong>Counterattacks:</strong> During war, randomly attack your weakest cities</li>
+            <li><strong>Max capacity:</strong> 8 units per tribal city (like your cities)</li>
         </ul>
 
-        <h3>Military Units:</h3>
+        <h3>⚖️ City Laws (Global Effect):</h3>
         <ul>
-            <li><strong>Infantry:</strong> 5 ATK / 3 DEF - 50F, 50M, 0E, 50 population</li>
-            <li><strong>Cavalry:</strong> 12 ATK / 5 DEF - 100F, 100M, 50E, 100 population</li>
-            <li><strong>Artillery:</strong> 20 ATK / 2 DEF - 50F, 300M, 150E, 10 population</li>
-            <li>Station units in cities for defense - withdraw them when needed</li>
-            <li>Max 8 units per city - over 4 units causes happiness penalties</li>
-        </ul>
-
-        <h3>City Laws:</h3>
-        <ul>
+            <li><strong>No Special Laws:</strong> Baseline (0% resources, 0 happiness)</li>
             <li><strong>Relaxed Work:</strong> -20% resources, +1 happiness/yr</li>
-            <li><strong>Efficiency:</strong> +30% resources, -0.5 happiness/yr</li>
-            <li><strong>Production+:</strong> +50% resources, -1 happiness/yr</li>
-            <li><strong>Harsh Labor:</strong> +100% resources, -2 happiness/yr</li>
+            <li><strong>Efficiency Standards:</strong> +30% resources, -0.5 happiness/yr</li>
+            <li><strong>Increased Production:</strong> +50% resources, -1 happiness/yr</li>
+            <li><strong>Harsh Labor Laws:</strong> +100% resources, -2 happiness/yr - Risky but powerful!</li>
         </ul>
 
-        <h3>Controls:</h3>
+        <h3>🎁 Philanthropy:</h3>
         <ul>
-            <li><strong>ESC:</strong> Cancel city/road placement or close panels</li>
-            <li><strong>Arrow Keys:</strong> Use during DDR battles</li>
-            <li><strong>Click:</strong> Select cities, tribals, or place buildings</li>
-            <li><strong>Scroll:</strong> Scroll side panels to see all options</li>
-            <li><strong>🔊 Button:</strong> Toggle music on/off (bottom right)</li>
+            <li><strong>Small Aid (30F, 15M, 5E):</strong> +5 happiness to ALL cities</li>
+            <li><strong>Medium Aid (90F, 45M, 15E):</strong> +15 happiness to ALL cities</li>
+            <li><strong>Large Aid (240F, 120M, 40E):</strong> +35 happiness to ALL cities</li>
+            <li><strong>Use this to prevent rebellions or boost morale before war!</strong></li>
         </ul>
 
-        <h3>Pro Tips:</h3>
+        <h3>🚀 Spaceport Victory Path:</h3>
         <ul>
-            <li>Build cities near Sacred Groves for maximum food production</li>
-            <li>Place cities near canyons when you need metal for military/infrastructure</li>
-            <li>Balance your resource income - don't neglect energy for advanced tech!</li>
-            <li>Roads are crucial - connected cities produce significantly more resources</li>
-            <li>Monitor tribal reputation carefully - losing it can trigger a devastating invasion</li>
-            <li>Station defense forces in vulnerable cities near tribal territory</li>
-            <li>Balance laws carefully - harsh labor gives resources but risks rebellion</li>
-            <li>Feature sharing divides bonuses - spread cities out for maximum efficiency</li>
-            <li>Specialize cities based on nearby terrain (Military near canyons, Trade near groves)</li>
+            <li><strong>Requirements to start:</strong> 5000 population AND 4000F + 4000M + 4000E</li>
+            <li><strong>Construction time:</strong> 10 years (real-time: ~16 minutes)</li>
+            <li><strong>⚠️ Population must stay above 3500 during construction or project FAILS!</strong></li>
+            <li><strong>Resources spent upfront:</strong> 4000F, 4000M, 4000E consumed when starting</li>
+            <li><strong>Track progress:</strong> Click "Spaceport" button to see % completion</li>
         </ul>
 
-        <button onclick="startGame()" style="width: 100%; margin-top: 20px; padding: 12px; font-size: 14px;">Start
-            Game
-        </button>
+        <h3>🎮 Controls & UI:</h3>
+        <ul>
+            <li><strong>ESC:</strong> Cancel placement/close panels</li>
+            <li><strong>Arrow Keys:</strong> DDR combat inputs</li>
+            <li><strong>Click city:</strong> View info, recruit units, upgrade</li>
+            <li><strong>Click tribal:</strong> View info, attack if at war</li>
+            <li><strong>Drag map:</strong> Pan around the planet</li>
+            <li><strong>Mouse wheel:</strong> Zoom in/out</li>
+            <li><strong>+/- buttons:</strong> Zoom controls (bottom right)</li>
+            <li><strong>Minimap:</strong> Click to jump to location (top left)</li>
+            <li><strong>🔊 Button:</strong> Toggle music (bottom right)</li>
+            <li><strong>Victory button:</strong> Check progress toward all victory conditions</li>
+            <li><strong>Research button:</strong> Open tech tree</li>
+        </ul>
+
+        <h3>💡 Pro Strategy Tips:</h3>
+        <ul>
+            <li><strong>Early game:</strong> Build near Sacred Groves/Lakes for food, focus on population growth</li>
+            <li><strong>Mid game:</strong> Connect cities with roads ASAP, specialize cities based on nearby features</li>
+            <li><strong>Late game:</strong> Balance 3 resources for Spaceport, or build military for domination</li>
+            <li><strong>Zone strategy:</strong> Build cities at 45-55% to maximize time in habitable zone</li>
+            <li><strong>Food stockpiles:</strong> Keep cities near zone edges at 80-100 food for safety</li>
+            <li><strong>Tribal management:</strong> Stay friendly (60+ rep) until you're ready for war</li>
+            <li><strong>Military timing:</strong> Don't build 11+ units until ready to fight!</li>
+            <li><strong>Happiness crisis:</strong> Use Philanthropy + Relaxed Work law to prevent rebellions</li>
+            <li><strong>Feature sharing:</strong> Spread cities out - don't cluster around same features</li>
+            <li><strong>Defense:</strong> Station 2-4 units in vulnerable cities (more causes unhappiness)</li>
+            <li><strong>Commander XP:</strong> Win battles to unlock powerful combat perks</li>
+            <li><strong>Multiple victories:</strong> You can complete all 4 - choose your favorite to claim!</li>
+        </ul>
+
+        <h3>⚠️ Common Mistakes to Avoid:</h3>
+        <ul>
+            <li>Building all cities in one zone (zone will shift away!)</li>
+            <li>Ignoring happiness (leads to rebellions)</li>
+            <li>Building too close to tribals early (angers them)</li>
+            <li>Not connecting cities with roads (miss huge bonuses)</li>
+            <li>Letting food stockpiles hit zero outside habitable zone</li>
+            <li>Over-garrisoning cities (causes happiness penalties)</li>
+            <li>Starting Spaceport construction without stable 3500+ population</li>
+            <li>Declaring war without adequate military preparation</li>
+        </ul>
+
+        <button onclick="startGame()" style="width: 100%; margin-top: 20px; padding: 12px; font-size: 14px;">Start Game</button>
     </div>
 
 

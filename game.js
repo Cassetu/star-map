@@ -260,8 +260,8 @@ const game = {
 };
 
 
-let cityIdCounter = 0, roadIdCounter = 0, tribalIdCounter = 0, gameLoop;
 let usedNames = [];
+let cityIdCounter = 0, roadIdCounter = 0, tribalIdCounter = 0, gameLoop;
 let mapZoom = 1.0;
 let mapPanX = 0;
 let mapPanY = 0;
@@ -796,6 +796,7 @@ function updateCityDisplay(city) {
 function selectCity(city) {
     game.selectedCity = city;
     game.selectedType = 'city';
+    updateRecruitButtonText();
     const foodColor = city.foodStockpile > 50 ? '#4CAF50' : (city.foodStockpile > 20 ? '#ffaa00' : '#ff4400');
     const foodText = `
          <div style="background: rgba(139,69,19,0.2); padding: 8px; border-radius: 5px; margin: 8px 0;">
@@ -829,6 +830,24 @@ function selectCity(city) {
 
     const panel = document.getElementById('info-panel');
     const inZone = isCityInHabitableZone(city);
+
+    let emergencyReliefText = '';
+    let emergencyReliefButton = '';
+
+    if (city.hasEmergencyRelief) {
+        emergencyReliefText = `<div style="background: rgba(76,175,80,0.15); padding: 8px; border-radius: 5px; margin: 8px 0; border: 2px solid rgba(76,175,80,0.5);">
+            <p style="font-size: 10px; color: #4CAF50;"><strong>🏥 Emergency Relief Active</strong></p>
+            <p style="font-size: 9px;">Shelters prevent happiness from dropping below 15</p>
+            <p style="font-size: 9px;">Citizens protected during evacuations</p>
+        </div>`;
+    } else if (!inZone && !city.isRebel) {
+        emergencyReliefButton = `<div style="background: rgba(255,68,0,0.1); padding: 8px; border-radius: 5px; margin: 8px 0; border: 2px solid rgba(255,68,0,0.5);">
+            <p style="font-size: 10px; color: #ff4400; margin-bottom: 5px;"><strong>⚠️ City Outside Safe Zone!</strong></p>
+            <p style="font-size: 9px; margin-bottom: 5px;">Build emergency shelters to prevent panic</p>
+            <button class="action-btn" style="font-size: 9px; padding: 4px;" onclick="buildEmergencyRelief(${city.id})" ${!hasResources({food: 0, metal: 200, energy: 150}) ? 'disabled' : ''}>🏥 Build Emergency Relief (200M, 150E)</button>
+        </div>`;
+    }
+
     const roadBonus = getRoadBonus(city);
     const featureBonus = getCityFeatureBonus(city);
     const connectedCities = getConnectedCities(city.id);
@@ -905,10 +924,20 @@ function selectCity(city) {
             <button class="action-btn" style="font-size: 9px; padding: 4px;" onclick="assignGovernor(${city.id}, 'diplomat')" ${currentGovernor !== 'none' || !hasResources({food: 200, metal: 150, energy: 150}) ? 'disabled' : ''}>🤝 Diplomat (200F, 150M, 150E)</button>
         </div>` : '';
 
-    const upgradeCost = city.upgradeLevel === 0 ? {food: 100, metal: 150, energy: 50} : {food: 200, metal: 300, energy: 100};
-    const upgradeBtn = city.upgradeLevel < 2 && !city.isRebel ?
-        `<button class="action-btn" onclick="upgradeCity(${city.id})" ${!hasResources(upgradeCost) ? 'disabled' : ''}>Upgrade Lvl${city.upgradeLevel + 1} (${city.upgradeLevel === 0 ? '100F, 150M, 50E' : '200F, 300M, 100E'})</button>` : '';
+    const upgradeCostReduced = city.upgradeLevel === 0 ?
+        {
+            food: Math.floor(100 * (1 - TechTree.getTechBonus('upgradeCost'))),
+            metal: Math.floor(150 * (1 - TechTree.getTechBonus('upgradeCost'))),
+            energy: Math.floor(50 * (1 - TechTree.getTechBonus('upgradeCost')))
+        } :
+        {
+            food: Math.floor(200 * (1 - TechTree.getTechBonus('upgradeCost'))),
+            metal: Math.floor(300 * (1 - TechTree.getTechBonus('upgradeCost'))),
+            energy: Math.floor(100 * (1 - TechTree.getTechBonus('upgradeCost')))
+        };
 
+    const upgradeBtn = city.upgradeLevel < 2 && !city.isRebel ?
+        `<button class="action-btn" onclick="upgradeCity(${city.id})" ${!hasResources(upgradeCostReduced) ? 'disabled' : ''}>Upgrade Lvl${city.upgradeLevel + 1} (${upgradeCostReduced.food}F, ${upgradeCostReduced.metal}M, ${upgradeCostReduced.energy}E)</button>` : '';
     const migrateBtn = !city.isRebel && city.population >= 50 ?
         `<button class="action-btn" onclick="migrateFrom(${city.id})" ${!hasResources({food: 30, metal: 10, energy: 5}) ? 'disabled' : ''}>Migrate 50 (30F, 10M, 5E)</button>` : '';
 
@@ -967,8 +996,7 @@ function selectCity(city) {
         stationedUnitsText += `<p style="font-size: 9px; margin-top: 4px; color: #ff4400;">Military Oppression: -${penalty} happiness/yr</p>`;
     }
 
-    panel.innerHTML = `<h3>${city.name}</h3>${upgradeText}<div class="happiness-bar"><div class="happiness-fill" style="width: ${city.happiness}%; background: ${happinessColor};"></div><div class="happiness-text">${Math.floor(city.happiness)}</div></div><p><strong>Population:</strong> ${Math.floor(city.population)}/${city.maxPopulation}</p>${rebellionText}<p><strong>Status:</strong> ${inZone ? '✓ In Zone' : '⚠ Outside!'}</p><p><strong>Road Bonus:</strong> +${(roadBonus * 100).toFixed(0)}%</p>${featureText}${connectionsText}${stationedUnitsText}${foodText}${entertainmentText}${entertainmentButtons}${governorText}${governorButtons}${specText}${specButtons}${upgradeBtn}${migrateBtn}`;
-
+    panel.innerHTML = `<h3>${city.name}</h3>${upgradeText}<div class="happiness-bar"><div class="happiness-fill" style="width: ${city.happiness}%; background: ${happinessColor};"></div><div class="happiness-text">${Math.floor(city.happiness)}</div></div><p><strong>Population:</strong> ${Math.floor(city.population)}/${city.maxPopulation}</p>${rebellionText}<p><strong>Status:</strong> ${inZone ? '✓ In Zone' : '⚠ Outside!'}</p><p><strong>Road Bonus:</strong> +${(roadBonus * 100).toFixed(0)}%</p>${featureText}${connectionsText}${stationedUnitsText}${foodText}${emergencyReliefText}${emergencyReliefButton}${entertainmentText}${entertainmentButtons}${governorText}${governorButtons}${specText}${specButtons}${upgradeBtn}${migrateBtn}`;
     document.getElementById('build-road-btn').disabled = false;
 }
 
@@ -987,7 +1015,7 @@ function setSpecialization(cityId, specType) {
 
     const cityEl = document.getElementById(`city-${city.id}`);
     if (cityEl) {
-        cityEl.className = `city city-${city.zoneType} city-${specType}`;
+        cityEl.className = `city city-${city.zoneType}${city.specialization !== 'none' ? ' city-' + city.specialization : ''}`;
         const oldBuildings = cityEl.querySelector('.city-buildings');
         if (oldBuildings) oldBuildings.remove();
         generateCityBuildings(cityEl, city);
@@ -996,6 +1024,7 @@ function setSpecialization(cityId, specType) {
     addMessage(`${city.name} specialized as ${spec.name}!`, 'success');
     AudioManager.playSFX('sfx-success', 0.6);
     selectCity(city);
+    updateRecruitButtonText();
 }
 
 function buildEntertainmentDistrict(cityId, districtType) {
@@ -1181,6 +1210,7 @@ function transferUnit(fromCityId, toCityId, unitType) {
 
     stationUnits(toCityId);
 }
+
 function upgradeCity(cityId) {
     const city = game.cities.find(c => c.id === cityId);
     if (!city || city.isRebel) return;
@@ -1213,6 +1243,7 @@ function upgradeCity(cityId) {
     }
 
     addMessage(`${city.name} upgraded to Level ${city.upgradeLevel}!`, 'success');
+    AudioManager.playSFX('sfx-success', 0.7);
     selectCity(city);
 }
 function migrateFrom(cityId) {
@@ -1247,6 +1278,7 @@ function migrateFrom(cityId) {
 function startGame() {
     document.getElementById('tutorial').style.display = 'none';
     VictoryConditions.init();
+    WonderSystem.init();
     game.running = true;
     TechTree.init();
     usedNames = [];
@@ -1254,24 +1286,27 @@ function startGame() {
     tribalIdCounter = 0;
     roadIdCounter = 0;
     Object.assign(game, {
-    cities: [], roads: [], features: [], tribalCities: [], tribalRoads: [],
-    messages: [], selectedCity: null, spaceportProgress: 0, spaceportBuilding: false,
-    spaceportYearStarted: 0,
-    resources: { food: 500, metal: 400, energy: 250 }, year: 0,
-    gatherCooldown: 0, tribalTradeCooldown: 0, tribalReputation: 50,
-    tribalRelation: 'neutral', hasEmbassy: false, activeLaw: 'none',
-    tribalRoadTimer: 0, tribalCityTimer: Math.random() * 50 + TRIBAL_CITY_INTERVAL_MIN,
-    ddrActive: false, ddrCombo: 0, ddrBonus: 0, tribalsDefeated: false,
-    tribalMilitaryWarned: false, commanderXP: 0, commanderLevel: 1,
-    unlockedPerks: [], activePerks: [], scoutedTribalCities: [],
-    battleFormation: 'balanced', retreatThreshold: 50, battlePhase: 0,
-    battleMorale: 100, weatherEvent: null, currentBattle: null, relentlessUsed: false,
-    peaceTalksActive: false, peaceTalksTimer: 0, peaceDemandsMet: 0,
-    peaceDemands: [], currentPeaceDemand: null, peaceTreatyCooldown: 0, lastShownDemandIndex: -1,
-    attackingCities: [],
-    selectingAttackers: false,
-    targetTribal: null
-});
+        cities: [], roads: [], features: [], tribalCities: [], tribalRoads: [],
+        messages: [], selectedCity: null, spaceportProgress: 0, spaceportBuilding: false,
+        spaceportYearStarted: 0,
+        wonderLocations: [],
+        spaceportYearStarted: 0,
+        resources: { food: 500, metal: 400, energy: 250 }, year: 0,
+        gatherCooldown: 0, tribalTradeCooldown: 0, tribalReputation: 50,
+        tribalRelation: 'neutral', hasEmbassy: false, activeLaw: 'none',
+        tribalRoadTimer: 0, tribalCityTimer: Math.random() * 50 + TRIBAL_CITY_INTERVAL_MIN,
+        ddrActive: false, ddrCombo: 0, ddrBonus: 0, tribalsDefeated: false,
+        tribalMilitaryWarned: false, commanderXP: 0, commanderLevel: 1,
+        unlockedPerks: [], activePerks: [], scoutedTribalCities: [],
+        battleFormation: 'balanced', retreatThreshold: 50, battlePhase: 0,
+        battleMorale: 100, weatherEvent: null, currentBattle: null, relentlessUsed: false,
+        peaceTalksActive: false, peaceTalksTimer: 0, peaceDemandsMet: 0,
+        peaceDemands: [], currentPeaceDemand: null, peaceTreatyCooldown: 0, lastShownDemandIndex: -1,
+        attackingCities: [],
+        selectingAttackers: false,
+        targetTribal: null
+    }
+);
 
 
 document.getElementById('planet-view').querySelectorAll('.city, .tribal-city, .road, .tribal-road, .army-arrow').forEach(el => el.remove());
@@ -1309,7 +1344,7 @@ const startingCity = {
 game.cities.push(startingCity);
 
 const cityEl = document.createElement('div');
-cityEl.className = `city city-${startingCity.zoneType}`;
+cityEl.className = `city city-${city.zoneType}${city.specialization !== 'none' ? ' city-' + city.specialization : ''}`;
 cityEl.id = `city-${startingCity.id}`;
 cityEl.style.left = '50%';
 cityEl.style.top = '50%';
@@ -1322,10 +1357,24 @@ cityEl.onclick = (e) => {
         game.buildingRoad = false;
         game.roadStartCity = null;
         document.getElementById('build-road-btn').classList.remove('active');
+        updateRoadButtonText();
     } else {
         selectCity(startingCity);
     }
 };
+
+cityEl.onmouseenter = (e) => {
+    if (game.buildingRoad && game.roadStartCity && game.roadStartCity.id !== startingCity.id) {
+        updateRoadButtonText(startingCity.x, startingCity.y);
+    }
+};
+
+cityEl.onmouseleave = (e) => {
+    if (game.buildingRoad && game.roadStartCity) {
+        updateRoadButtonText();
+    }
+};
+
 generateCityBuildings(cityEl, startingCity);
 document.getElementById('planet-view').appendChild(cityEl);
 
@@ -1389,8 +1438,10 @@ function update() {
             game.spaceportProgress = 0;
             AudioManager.playSFX('sfx-alert', 0.7);
         } else {
+            const wonderBonus = WonderSystem.getWonderBonus('spaceport');
             const yearsElapsed = game.year - game.spaceportYearStarted;
-            game.spaceportProgress = Math.min(100, (yearsElapsed / 10) * 100);
+            const effectiveTime = 10 / (1 + wonderBonus);
+            game.spaceportProgress = Math.min(100, (yearsElapsed / effectiveTime) * 100);
 
             if (game.spaceportProgress >= 100) {
                 VictoryConditions.checkVictory();
@@ -1402,6 +1453,10 @@ function update() {
     tribalExpansion();
     tribalMilitaryManagement();
     checkTribalWarDeclaration();
+    WonderSystem.updateWonders();
+    if (Math.floor(game.year * 10) % 10 === 0) {
+        WonderSystem.checkWonderConnections();
+    }
     if (game.tribalRelation === 'war' && !game.tribalsDefeated && Math.random() < 0.01) {
         tribalCounterattack();
     }
@@ -1453,6 +1508,7 @@ function update() {
         }
 
         const inZone = isCityInHabitableZone(city);
+
         const lawEffect = LAWS[game.activeLaw];
         const roadBonus = getRoadBonus(city);
         const featureBonus = getCityFeatureBonus(city);
@@ -1489,8 +1545,9 @@ function update() {
         }
 
         const neighborBonus = getNeighboringCityBonus(city) * 0.01;
-        if (neighborBonus > 0) {
-            city.happiness += neighborBonus;
+        const wonderHappiness = WonderSystem.getWonderBonus('happiness') * 0.01;
+        if (neighborBonus > 0 || wonderHappiness > 0) {
+            city.happiness += neighborBonus + wonderHappiness;
         }
 
         const happinessFloor = city.hasEmergencyRelief ? 15 : 0;
@@ -1538,40 +1595,57 @@ function update() {
             const specBonus = 1 + CITY_SPECIALIZATIONS[city.specialization].resourceBonus;
             const governorBonus = city.governor && city.governor !== 'none' ? GOVERNOR_TYPES[city.governor].resourceMod : 1.0;
             const totalProductionMod = (1 + roadBonus) * conversionPenalty * lawBonus * tradeBonus * popProductionBonus * specBonus * governorBonus;
+            const researchMultiplier = 1 + WonderSystem.getWonderBonus('research');
 
             if (city.specialization === 'trade') {
                 const foodProd = (baseProduction + (featureBonus.foodBonus * 0.01)) * totalProductionMod * 0.4;
                 const metalProd = (baseProduction + (featureBonus.metalBonus * 0.01)) * totalProductionMod * 0.3;
                 const energyProd = (baseProduction + (featureBonus.energyBonus * 0.01)) * totalProductionMod * 0.3;
 
-                game.resources.food += foodProd * (1 + TechTree.getTechBonus('foodProduction'));
-                game.resources.metal += metalProd * (1 + TechTree.getTechBonus('metalProduction'));
-                game.resources.energy += energyProd * (1 + TechTree.getTechBonus('energyProduction'));
+                const wonderFoodBonus = WonderSystem.hasActiveWonder('gardenOfLife') ? 0.40 : 0;
+                const wonderGrowthBonus = WonderSystem.hasActiveWonder('gardenOfLife') ? 0.20 : 0;
+                const wonderProductionBonus = WonderSystem.getWonderBonus('production');
+
+                game.resources.food += foodProd * (1 + TechTree.getTechBonus('foodProduction') + wonderFoodBonus);
+                game.resources.metal += metalProd * (1 + TechTree.getTechBonus('metalProduction') + wonderProductionBonus);
+                game.resources.energy += energyProd * (1 + TechTree.getTechBonus('energyProduction') + wonderProductionBonus);
             } else if (city.specialization === 'research') {
                 const foodProd = (baseProduction + (featureBonus.foodBonus * 0.01)) * totalProductionMod * 0.2;
                 const metalProd = (baseProduction + (featureBonus.metalBonus * 0.01)) * totalProductionMod * 0.3;
                 const energyProd = (baseProduction + (featureBonus.energyBonus * 0.01)) * totalProductionMod * 0.5;
-                game.researchPoints += 0.1;
+                game.researchPoints += 0.1 * researchMultiplier;
 
-                game.resources.food += foodProd * (1 + TechTree.getTechBonus('foodProduction'));
-                game.resources.metal += metalProd * (1 + TechTree.getTechBonus('metalProduction'));
-                game.resources.energy += energyProd * (1 + TechTree.getTechBonus('energyProduction'));
+                const wonderFoodBonus = WonderSystem.hasActiveWonder('gardenOfLife') ? 0.40 : 0;
+                const wonderGrowthBonus = WonderSystem.hasActiveWonder('gardenOfLife') ? 0.20 : 0;
+                const wonderProductionBonus = WonderSystem.getWonderBonus('production');
+
+                game.resources.food += foodProd * (1 + TechTree.getTechBonus('foodProduction') + wonderFoodBonus);
+                game.resources.metal += metalProd * (1 + TechTree.getTechBonus('metalProduction') + wonderProductionBonus);
+                game.resources.energy += energyProd * (1 + TechTree.getTechBonus('energyProduction') + wonderProductionBonus);
             } else if (city.specialization === 'military') {
                 const foodProd = (baseProduction + (featureBonus.foodBonus * 0.01)) * totalProductionMod * 0.4;
                 const metalProd = (baseProduction + (featureBonus.metalBonus * 0.01)) * totalProductionMod * 0.5;
                 const energyProd = (baseProduction + (featureBonus.energyBonus * 0.01)) * totalProductionMod * 0.1;
 
-                game.resources.food += foodProd * (1 + TechTree.getTechBonus('foodProduction'));
-                game.resources.metal += metalProd * (1 + TechTree.getTechBonus('metalProduction'));
-                game.resources.energy += energyProd * (1 + TechTree.getTechBonus('energyProduction'));
+                const wonderFoodBonus = WonderSystem.hasActiveWonder('gardenOfLife') ? 0.40 : 0;
+                const wonderGrowthBonus = WonderSystem.hasActiveWonder('gardenOfLife') ? 0.20 : 0;
+                const wonderProductionBonus = WonderSystem.getWonderBonus('production');
+
+                game.resources.food += foodProd * (1 + TechTree.getTechBonus('foodProduction') + wonderFoodBonus);
+                game.resources.metal += metalProd * (1 + TechTree.getTechBonus('metalProduction') + wonderProductionBonus);
+                game.resources.energy += energyProd * (1 + TechTree.getTechBonus('energyProduction') + wonderProductionBonus);
             } else {
                 const foodProd = (baseProduction + (featureBonus.foodBonus * 0.01)) * totalProductionMod * 0.4;
                 const metalProd = (baseProduction + (featureBonus.metalBonus * 0.01)) * totalProductionMod * 0.3;
                 const energyProd = (baseProduction + (featureBonus.energyBonus * 0.01)) * totalProductionMod * 0.3;
 
-                game.resources.food += foodProd * (1 + TechTree.getTechBonus('foodProduction'));
-                game.resources.metal += metalProd * (1 + TechTree.getTechBonus('metalProduction'));
-                game.resources.energy += energyProd * (1 + TechTree.getTechBonus('energyProduction'));
+                const wonderFoodBonus = WonderSystem.hasActiveWonder('gardenOfLife') ? 0.40 : 0;
+                const wonderGrowthBonus = WonderSystem.hasActiveWonder('gardenOfLife') ? 0.20 : 0;
+                const wonderProductionBonus = WonderSystem.getWonderBonus('production');
+
+                game.resources.food += foodProd * (1 + TechTree.getTechBonus('foodProduction') + wonderFoodBonus);
+                game.resources.metal += metalProd * (1 + TechTree.getTechBonus('metalProduction') + wonderProductionBonus);
+                game.resources.energy += energyProd * (1 + TechTree.getTechBonus('energyProduction') + wonderProductionBonus);
             }
 
             if (city.tradeBoost > 0) {
@@ -1638,8 +1712,8 @@ function update() {
     }
 
     if (game.cities.length > 0 && game.cities.every(city => city.isRebel)) {
-    gameOver('All cities are in rebellion! Your civilization has collapsed.');
-    return;
+        gameOver('All cities are in rebellion! Your civilization has collapsed.');
+        return;
     }
 
 
@@ -2512,7 +2586,7 @@ AudioManager.playSFX('sfx-city-build', 0.6);
 
 
         const cityEl = document.createElement('div');
-        cityEl.className = `city city-${city.zoneType}`;
+        cityEl.className = `city city-${city.zoneType}${city.specialization !== 'none' ? ' city-' + city.specialization : ''}`;
         cityEl.id = `city-${city.id}`;
         cityEl.style.left = `${x}%`;
         cityEl.style.top = `${y}%`;
@@ -2544,143 +2618,131 @@ function generateCityBuildings(cityEl, city) {
     const buildingsContainer = document.createElement('div');
     buildingsContainer.className = 'city-buildings';
 
-    const buildings = [];
-    const baseCount = 5;
-    const specCount = city.specialization === 'none' ? 0 : 3;
-    const upgradeCount = city.upgradeLevel * 2;
+    const upgradeLevel = city.upgradeLevel || 0;
+    const specialization = city.specialization || 'none';
     const entertainmentCount = city.entertainmentDistricts ? city.entertainmentDistricts.length : 0;
-    const totalBuildings = baseCount + specCount + upgradeCount + entertainmentCount;
 
-    for (let i = 0; i < totalBuildings; i++) {
-        const building = document.createElement('div');
-        building.className = 'building';
-
-        const angle = (i / totalBuildings) * Math.PI * 2;
-        const radius = 12 + Math.random() * 8;
-        const x = Math.cos(angle) * radius;
-        const y = Math.sin(angle) * radius;
-
-        const width = 4 + Math.random() * 4;
-        const height = 6 + Math.random() * 8;
-
-        building.style.width = `${width}px`;
-        building.style.height = `${height}px`;
-        building.style.left = `${20 + x}px`;
-        building.style.top = `${20 + y}px`;
-
-        if (city.entertainmentDistricts && i >= totalBuildings - entertainmentCount) {
-            const districtIndex = i - (totalBuildings - entertainmentCount);
-            const districtType = city.entertainmentDistricts[districtIndex];
-
-            if (districtType === 'theater') {
-                building.style.background = 'linear-gradient(to bottom, #9C27B0, #7B1FA2)';
-                building.style.borderRadius = '50% 50% 0 0';
-                building.style.height = `${height * 1.2}px`;
-            } else if (districtType === 'arena') {
-                building.style.background = 'linear-gradient(to bottom, #FF5722, #E64A19)';
-                building.style.borderRadius = '10px';
-                building.style.border = '2px solid #BF360C';
-            } else if (districtType === 'garden') {
-                building.style.background = 'linear-gradient(to bottom, #4CAF50, #388E3C)';
-                building.style.borderRadius = '50%';
-                building.style.width = `${width * 1.3}px`;
-            }
+    if (upgradeLevel === 0) {
+        for (let i = 0; i < 5; i++) {
+            const hut = document.createElement('div');
+            hut.className = 'building-hut';
+            const angle = (i / 5) * Math.PI * 2;
+            const radius = 10 + Math.random() * 3;
+            const x = Math.cos(angle) * radius;
+            const y = Math.sin(angle) * radius;
+            hut.style.left = `${20 + x}px`;
+            hut.style.top = `${20 + y}px`;
+            buildingsContainer.appendChild(hut);
         }
-
-        if (city.hasEmergencyRelief) {
-            const shelter = document.createElement('div');
-            shelter.className = 'emergency-shelter';
-            shelter.style.position = 'absolute';
-            shelter.style.width = '8px';
-            shelter.style.height = '8px';
-            shelter.style.background = 'linear-gradient(135deg, #4CAF50, #2E7D32)';
-            shelter.style.border = '2px solid #1B5E20';
-            shelter.style.borderRadius = '3px';
-            shelter.style.left = '-10px';
-            shelter.style.bottom = '-10px';
-            shelter.style.boxShadow = '0 0 8px rgba(76, 175, 80, 0.8)';
-            buildingsContainer.appendChild(shelter);
+    } else if (upgradeLevel === 1) {
+        for (let i = 0; i < 8; i++) {
+            const house = document.createElement('div');
+            house.className = 'building-house';
+            const angle = (i / 8) * Math.PI * 2;
+            const radius = 12 + (i % 2) * 4;
+            const x = Math.cos(angle) * radius;
+            const y = Math.sin(angle) * radius;
+            house.style.left = `${20 + x}px`;
+            house.style.top = `${20 + y}px`;
+            buildingsContainer.appendChild(house);
         }
+    } else {
+        for (let i = 0; i < 12; i++) {
+            const building = document.createElement('div');
+            building.className = 'building-skyscraper';
+            const angle = (i / 12) * Math.PI * 2;
+            const radius = 10 + (i % 3) * 3;
+            const height = 8 + Math.random() * 8;
+            const x = Math.cos(angle) * radius;
+            const y = Math.sin(angle) * radius;
+            building.style.left = `${20 + x}px`;
+            building.style.top = `${20 + y}px`;
+            building.style.height = `${height}px`;
 
-        const connections = getConnectedCities(city.id).length;
-        if (connections >= 3) {
-            const beacon = document.createElement('div');
-            beacon.className = 'network-beacon';
-            beacon.style.position = 'absolute';
-            beacon.style.width = '6px';
-            beacon.style.height = '6px';
-            beacon.style.background = 'radial-gradient(circle, #00ff00, #00ff88)';
-            beacon.style.borderRadius = '50%';
-            beacon.style.top = '-12px';
-            beacon.style.right = '-8px';
-            beacon.style.boxShadow = '0 0 12px rgba(0, 255, 0, 1)';
-            beacon.style.animation = 'networkPulse 2s infinite';
-            buildingsContainer.appendChild(beacon);
+            const windows = document.createElement('div');
+            windows.className = 'skyscraper-windows';
+            building.appendChild(windows);
+
+            buildingsContainer.appendChild(building);
         }
-
-        if (city.specialization === 'military') {
-            if (i % 3 === 0) {
-                building.style.height = `${height * 1.3}px`;
-                building.style.borderTop = '3px solid #8B0000';
-            }
-        } else if (city.specialization === 'trade') {
-            building.style.background = 'linear-gradient(to bottom, #DAA520, #B8860B)';
-            if (i % 4 === 0) {
-                building.style.borderTop = '2px solid #FFD700';
-            }
-        } else if (city.specialization === 'research') {
-            building.style.background = 'linear-gradient(to bottom, #4169E1, #1E90FF)';
-            if (i % 3 === 0) {
-                building.style.height = `${height * 1.2}px`;
-                building.style.boxShadow = '0 0 5px rgba(65, 105, 225, 0.8)';
-            }
-        }
-
-        buildingsContainer.appendChild(building);
     }
 
-    if (city.upgradeLevel > 0) {
-        const walls = document.createElement('div');
-        walls.className = 'city-walls';
+    if (specialization === 'military' && upgradeLevel >= 1) {
+        const fort = document.createElement('div');
+        fort.className = 'specialization-military-fort';
+        fort.innerHTML = `
+            <div class="fort-wall fort-wall-left"></div>
+            <div class="fort-wall fort-wall-right"></div>
+            <div class="fort-tower"></div>
+            <div class="fort-flag">⚔️</div>
+        `;
+        buildingsContainer.appendChild(fort);
+    }
 
-        const positions = [
-            { left: '-5px', top: '-5px' },
-            { right: '-5px', top: '-5px' },
-            { left: '-5px', bottom: '-5px' },
-            { right: '-5px', bottom: '-5px' }
-        ];
+    if (specialization === 'trade' && upgradeLevel >= 1) {
+        const bank = document.createElement('div');
+        bank.className = 'specialization-trade-bank';
+        bank.innerHTML = `
+            <div class="bank-base"></div>
+            <div class="bank-pillar bank-pillar-1"></div>
+            <div class="bank-pillar bank-pillar-2"></div>
+            <div class="bank-pillar bank-pillar-3"></div>
+            <div class="bank-roof"></div>
+            <div class="bank-coin">💰</div>
+        `;
+        buildingsContainer.appendChild(bank);
+    }
 
-        positions.forEach(pos => {
-            const tower = document.createElement('div');
-            tower.className = 'city-tower';
-            Object.assign(tower.style, pos);
-            walls.appendChild(tower);
+    if (specialization === 'research' && upgradeLevel >= 1) {
+        const library = document.createElement('div');
+        library.className = 'specialization-research-library';
+        library.innerHTML = `
+            <div class="library-dome"></div>
+            <div class="library-base"></div>
+            <div class="library-beam"></div>
+            <div class="library-icon">🔬</div>
+        `;
+        buildingsContainer.appendChild(library);
+    }
+
+    if (entertainmentCount > 0) {
+        city.entertainmentDistricts.forEach((districtType, index) => {
+            const district = ENTERTAINMENT_DISTRICTS[districtType];
+            const entertainment = document.createElement('div');
+            entertainment.className = `entertainment-building entertainment-${districtType}`;
+
+            const angle = (Math.PI / 4) + (index * Math.PI / 2);
+            const radius = 18;
+            const x = Math.cos(angle) * radius;
+            const y = Math.sin(angle) * radius;
+            entertainment.style.left = `${20 + x}px`;
+            entertainment.style.top = `${20 + y}px`;
+
+            entertainment.textContent = district.icon;
+            buildingsContainer.appendChild(entertainment);
         });
-
-        buildingsContainer.appendChild(walls);
     }
 
-    if (city.specialization !== 'none') {
-        const icon = document.createElement('div');
-        icon.className = 'specialization-icon';
-        const icons = {
-            military: '⚔️',
-            trade: '💰',
-            research: '🔬'
-        };
-        icon.textContent = icons[city.specialization];
-        buildingsContainer.appendChild(icon);
+    if (city.hasEmergencyRelief) {
+        const shelter = document.createElement('div');
+        shelter.className = 'emergency-shelter-building';
+        shelter.innerHTML = `
+            <div class="shelter-cross"></div>
+            <div class="shelter-base"></div>
+        `;
+        shelter.style.left = '2px';
+        shelter.style.bottom = '2px';
+        buildingsContainer.appendChild(shelter);
     }
 
-    if (city.specialization === 'trade' || city.specialization === 'research') {
-        for (let i = 0; i < 3; i++) {
-            const smoke = document.createElement('div');
-            smoke.className = 'city-smoke';
-            smoke.style.left = `${15 + Math.random() * 10}px`;
-            smoke.style.top = `${10 + Math.random() * 10}px`;
-            smoke.style.animationDelay = `${i * 1}s`;
-            buildingsContainer.appendChild(smoke);
-        }
+    const connections = getConnectedCities(city.id).length;
+    if (connections >= 3) {
+        const beacon = document.createElement('div');
+        beacon.className = 'network-beacon';
+        beacon.style.position = 'absolute';
+        beacon.style.top = '-8px';
+        beacon.style.right = '-8px';
+        buildingsContainer.appendChild(beacon);
     }
 
     const glow = document.createElement('div');
@@ -2747,15 +2809,20 @@ function spendResources(cost) {
 function updateBuildCityButtonText(x, y) {
     const btn = document.getElementById('build-city-btn');
     if (!game.placingCity) {
-        btn.textContent = 'Place City (200F, 200M, 100E)';
+        const baseCost = {
+            food: Math.floor(200 * (1 - TechTree.getTechBonus('cityCost'))),
+            metal: Math.floor(200 * (1 - TechTree.getTechBonus('cityCost'))),
+            energy: Math.floor(100 * (1 - TechTree.getTechBonus('cityCost')))
+        };
+        btn.textContent = `Place City (${baseCost.food}F, ${baseCost.metal}M, ${baseCost.energy}E)`;
         return;
     }
 
     const distMult = getDistanceMultiplier(x, y);
     const cost = {
-        food: Math.floor(200 * distMult),
-        metal: Math.floor(200 * distMult),
-        energy: Math.floor(100 * distMult)
+        food: Math.floor(200 * distMult * (1 - TechTree.getTechBonus('cityCost'))),
+        metal: Math.floor(200 * distMult * (1 - TechTree.getTechBonus('cityCost'))),
+        energy: Math.floor(100 * distMult * (1 - TechTree.getTechBonus('cityCost')))
     };
 
     const canAfford = hasResources(cost);
@@ -3037,6 +3104,14 @@ units.forEach((unit, index) => {
 }
 
 function handlePlanetClick(e) {
+    if (WonderSystem.placingWonder) {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * 100;
+        const y = ((e.clientY - rect.top) / rect.height) * 100;
+        WonderSystem.placeWonder(x, y);
+        return;
+    }
+
     if (!game.placingCity && !game.buildingRoad) {
         document.getElementById('placement-radius').classList.remove('active');
         return;
@@ -3056,6 +3131,27 @@ function handlePlanetClick(e) {
 }
 
 function handlePlanetMove(e) {
+    if (game.buildingRoad && game.roadStartCity) {
+        const cities = document.querySelectorAll('.city');
+        let hoveredCity = null;
+
+        cities.forEach(cityEl => {
+            const rect = cityEl.getBoundingClientRect();
+            if (e.clientX >= rect.left && e.clientX <= rect.right &&
+                e.clientY >= rect.top && e.clientY <= rect.bottom) {
+                const cityId = parseInt(cityEl.id.replace('city-', ''));
+                hoveredCity = game.cities.find(c => c.id === cityId);
+            }
+        });
+
+        if (hoveredCity && hoveredCity.id !== game.roadStartCity.id) {
+            updateRoadButtonText(hoveredCity.x, hoveredCity.y);
+        } else {
+            updateRoadButtonText();
+        }
+        return;
+    }
+
     if (!game.placingCity) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
@@ -3113,7 +3209,7 @@ function createRoad(city1, city2) {
     spendResources(roadCost);
 
     const roadEl = document.createElement('div');
-    roadEl.className = 'road';
+    roadEl.className = `road ${getRoadStyleClass()}`;
     roadEl.id = `road-${road.id}`;
 
     roadEl.onmouseenter = () => {
@@ -3132,6 +3228,27 @@ function createRoad(city1, city2) {
     }, 0);
 
     addMessage(`Road built: ${city1.name} ↔ ${city2.name}!`, 'success');
+}
+
+function getRoadStyleClass() {
+    const hasDirtRoads = TechTree.unlockedTechs.includes('dirtRoads');
+    const hasPavedRoads = TechTree.unlockedTechs.includes('pavedRoads');
+    const hasHighways = TechTree.unlockedTechs.includes('highways');
+
+    if (hasHighways) return 'road-highway';
+    if (hasPavedRoads) return 'road-paved';
+    if (hasDirtRoads) return 'road-dirt';
+    return 'road-basic';
+}
+
+function updateAllRoadStyles() {
+    const styleClass = getRoadStyleClass();
+    game.roads.forEach(road => {
+        const roadEl = document.getElementById(`road-${road.id}`);
+        if (roadEl) {
+            roadEl.className = `road ${styleClass}`;
+        }
+    });
 }
 
 function startRoadBuilding() {
@@ -3153,6 +3270,7 @@ function startRoadBuilding() {
     document.getElementById('build-road-btn').classList.add('active');
     document.getElementById('build-city-btn').classList.remove('active');
     addMessage(`Building road from ${game.selectedCity.name}. Click another city.`, 'info');
+    updateRoadButtonText();
 }
 
 function generateTribalCities() {
@@ -3272,8 +3390,9 @@ function getTotalAttack(city) {
     const infBonus = 1 + TechTree.getTechBonus('infantryAttack');
     const cavBonus = 1 + TechTree.getTechBonus('cavalryAttack');
     const artBonus = 1 + TechTree.getTechBonus('artilleryAttack');
+    const wonderAttackBonus = WonderSystem.getWonderBonus('military');
 
-    return (infAttack * infBonus) + (cavAttack * cavBonus) + (artAttack * artBonus);
+    return ((infAttack * infBonus) + (cavAttack * cavBonus) + (artAttack * artBonus)) * (1 + wonderAttackBonus);
 }
 
 function getTotalDefense(city) {
@@ -3893,7 +4012,7 @@ function endEnhancedDDRBattle() {
     let playerDefense = (closestCity.stationedUnits.infantry * 3 + closestCity.stationedUnits.cavalry * 5 + closestCity.stationedUnits.artillery * 2) + (closestCity.population * 0.5) + (closestCity.upgradeLevel * 50);
 
     playerDefense *= formation.defMod;
-    playerDefense *= (1 + TechTree.getTechBonus('defenseBonus'));
+    playerDefense *= (1 + TechTree.getTechBonus('defenseBonus') + WonderSystem.getWonderBonus('cityDefense'));
 
     const governorDefenseMod = closestCity.governor && closestCity.governor !== 'none' ? GOVERNOR_TYPES[closestCity.governor].defenseMod : 1.0;
     playerDefense *= governorDefenseMod;
@@ -4070,28 +4189,30 @@ function convertTribalCity(tribal) {
         autoFeed: true
     };
 
-            game.cities.push(city);
+    game.cities.push(city);
 
-            const cityEl = document.createElement('div');
-            cityEl.className = 'city city-hot city-rebel';
-            cityEl.id = `city-${city.id}`;
-            cityEl.style.left = `${city.x}%`;
-            cityEl.style.top = `${city.y}%`;
-            cityEl.style.transform = 'translate(-50%, -50%)';
-            cityEl.innerHTML = `<div class="city-label">${city.name}</div><div class="city-icon"></div><div class="population-bar"><div class="population-fill" style="width: ${(city.population/city.maxPopulation)*100}%"></div></div>`;
-            cityEl.onclick = (e) => { e.stopPropagation(); selectCity(city); };
+    const cityEl = document.createElement('div');
+    cityEl.className = `city city-${city.zoneType}${city.specialization !== 'none' ? ' city-' + city.specialization : ''}`;
+    cityEl.id = `city-${city.id}`;
+    cityEl.style.left = `${city.x}%`;
+    cityEl.style.top = `${city.y}%`;
+    cityEl.style.transform = 'translate(-50%, -50%)';
+    cityEl.innerHTML = `<div class="city-label">${city.name}</div><div class="city-icon"></div><div class="population-bar"><div class="population-fill" style="width: ${(city.population/city.maxPopulation)*100}%"></div></div>`;
+    cityEl.onclick = (e) => { e.stopPropagation(); selectCity(city); };
+
+
     generateCityBuildings(cityEl, city);
+    document.getElementById('planet-view').appendChild(cityEl);
 
-            document.getElementById('planet-view').appendChild(cityEl);
+    const tribalEl = document.getElementById(`tribal-${tribal.id}`);
 
-            const tribalEl = document.getElementById(`tribal-${tribal.id}`);
     if (tribalEl) {
-    tribalEl.querySelectorAll('.unit-icon').forEach(icon => icon.remove());
-    tribalEl.className = 'tribal-city tribal-city-converted';
+        tribalEl.querySelectorAll('.unit-icon').forEach(icon => icon.remove());
+        tribalEl.className = 'tribal-city tribal-city-converted';
     }
 
-            game.tribalReputation = Math.max(0, game.tribalReputation - 20);
-            updateCityDisplay(city);
+    game.tribalReputation = Math.max(0, game.tribalReputation - 20);
+    updateCityDisplay(city);
 
     checkTribalDefeat();
 }
@@ -4206,6 +4327,75 @@ function tribalBuildCity() {
     addMessage('Tribes founded a new city!', 'danger');
 }
 
+function updateRecruitButtonText() {
+    const selectedCity = game.selectedCity && game.selectedType === 'city' ? game.selectedCity : null;
+    const specMod = selectedCity ? CITY_SPECIALIZATIONS[selectedCity.specialization].recruitCostMod : 1;
+
+    const infPopCost = Math.floor(50 * (1 - TechTree.getTechBonus('recruitmentCost')));
+    const cavPopCost = Math.floor(100 * (1 - TechTree.getTechBonus('recruitmentCost')));
+    const artPopCost = Math.floor(10 * (1 - TechTree.getTechBonus('recruitmentCost')));
+
+    const infFoodCost = Math.floor(50 * specMod);
+    const infMetalCost = Math.floor(50 * specMod);
+
+    const cavFoodCost = Math.floor(100 * specMod);
+    const cavMetalCost = Math.floor(100 * specMod);
+    const cavEnergyCost = Math.floor(50 * specMod);
+
+    const artFoodCost = Math.floor(50 * specMod);
+    const artMetalCost = Math.floor(300 * specMod);
+    const artEnergyCost = Math.floor(150 * specMod);
+
+    document.getElementById('recruit-infantry-btn').textContent =
+        `Recruit Infantry (${infFoodCost}F, ${infMetalCost}M, ${infPopCost}pop)`;
+
+    document.getElementById('recruit-cavalry-btn').textContent =
+        `Recruit Cavalry (${cavFoodCost}F, ${cavMetalCost}M, ${cavEnergyCost}E, ${cavPopCost}pop)`;
+
+    document.getElementById('recruit-artillery-btn').textContent =
+        `Recruit Artillery (${artFoodCost}F, ${artMetalCost}M, ${artEnergyCost}E, ${artPopCost}pop)`;
+}
+
+function updateRoadButtonText(targetX, targetY) {
+    const btn = document.getElementById('build-road-btn');
+
+    if (!game.buildingRoad || !game.roadStartCity) {
+        const baseCost = {
+            metal: Math.floor(100 * (1 - TechTree.getTechBonus('roadCost'))),
+            energy: Math.floor(50 * (1 - TechTree.getTechBonus('roadCost')))
+        };
+        btn.textContent = `Build Road (${baseCost.metal}M, ${baseCost.energy}E)`;
+        return;
+    }
+
+    if (!targetX && !targetY) {
+        const baseCost = {
+            metal: Math.floor(100 * (1 - TechTree.getTechBonus('roadCost'))),
+            energy: Math.floor(50 * (1 - TechTree.getTechBonus('roadCost')))
+        };
+        btn.textContent = `Build Road (${baseCost.metal}M, ${baseCost.energy}E) - Select target city`;
+        return;
+    }
+
+    const distance = Math.sqrt(
+        Math.pow(game.roadStartCity.x - targetX, 2) +
+        Math.pow(game.roadStartCity.y - targetY, 2)
+    );
+    const distMult = distance > 20 ? 1.5 : 1;
+
+    const cost = {
+        metal: Math.floor(100 * distMult * (1 - TechTree.getTechBonus('roadCost'))),
+        energy: Math.floor(50 * distMult * (1 - TechTree.getTechBonus('roadCost')))
+    };
+
+    let text = `Build Road (${cost.metal}M, ${cost.energy}E)`;
+    if (distMult > 1) {
+        text += ` [${distMult}x distance]`;
+    }
+
+    btn.textContent = text;
+}
+
 function createTribalRoad(t1, t2) {
     const roadEl = document.createElement('div');
     roadEl.className = 'tribal-road';
@@ -4275,81 +4465,82 @@ function updateZoom(delta) {
 }
 
 function recruitUnit(type) {
-if (!game.selectedCity || game.selectedType !== 'city') {
-addMessage('Select a city first to recruit units!', 'warning');
-return;
-}
+    if (!game.selectedCity || game.selectedType !== 'city') {
+        addMessage('Select a city first to recruit units!', 'warning');
+        return;
+    }
 
-const city = game.selectedCity;
-if (city.isRebel) {
-addMessage('Cannot recruit in rebel cities!', 'warning');
-return;
-}
+    const city = game.selectedCity;
+    if (city.isRebel) {
+        addMessage('Cannot recruit in rebel cities!', 'warning');
+        return;
+    }
 
-const totalUnitsInCity = city.stationedUnits.infantry + city.stationedUnits.cavalry + city.stationedUnits.artillery;
-if (totalUnitsInCity >= 8) {
-addMessage(`${city.name} is at max capacity (8 units)!`, 'warning');
-return;
-}
-const unit = UNIT_TYPES[type];
-const basePop = type === 'infantry' ? 50 : (type === 'cavalry' ? 100 : 10);
-const popCost = Math.floor(basePop * (1 - TechTree.getTechBonus('recruitmentCost')));
+    const totalUnitsInCity = city.stationedUnits.infantry + city.stationedUnits.cavalry + city.stationedUnits.artillery;
+    if (totalUnitsInCity >= 8) {
+        addMessage(`${city.name} is at max capacity (8 units)!`, 'warning');
+        return;
+    }
 
-const specMod = CITY_SPECIALIZATIONS[city.specialization].recruitCostMod;
-const finalCost = {
-food: Math.floor(unit.cost.food * specMod),
-metal: Math.floor(unit.cost.metal * specMod),
-energy: Math.floor(unit.cost.energy * specMod)
-};
+    const unit = UNIT_TYPES[type];
+    const wonderCostReduction = WonderSystem.hasActiveWonder('commandCenter') ? 0.20 : 0;
+    const basePop = type === 'infantry' ? 50 : (type === 'cavalry' ? 100 : 10);
+    const popCost = Math.floor(basePop * (1 - TechTree.getTechBonus('recruitmentCost') - wonderCostReduction));
 
-if (!hasResources(finalCost)) {
-addMessage(`Not enough resources for ${unit.name}!`, 'warning');
-return;
-}
+    const specMod = CITY_SPECIALIZATIONS[city.specialization].recruitCostMod;
+    const wonderMod = 1 - wonderCostReduction;
+    const finalCost = {
+        food: Math.floor(unit.cost.food * specMod * wonderMod),
+        metal: Math.floor(unit.cost.metal * specMod * wonderMod),
+        energy: Math.floor(unit.cost.energy * specMod * wonderMod)
+    };
 
+    if (!hasResources(finalCost)) {
+        addMessage(`Not enough resources for ${unit.name}!`, 'warning');
+        return;
+    }
 
-if (city.population < popCost + 10) {
-addMessage(`${city.name} needs ${popCost} population to recruit!`, 'warning');
-return;
-}
+    if (city.population < popCost + 10) {
+        addMessage(`${city.name} needs ${popCost} population to recruit!`, 'warning');
+        return;
+    }
 
-const totalInfantry = game.cities.reduce((sum, c) => sum + c.stationedUnits.infantry, 0);
-const totalCavalry = game.cities.reduce((sum, c) => sum + c.stationedUnits.cavalry, 0);
-const totalArtillery = game.cities.reduce((sum, c) => sum + c.stationedUnits.artillery, 0);
+    const totalInfantry = game.cities.reduce((sum, c) => sum + c.stationedUnits.infantry, 0);
+    const totalCavalry = game.cities.reduce((sum, c) => sum + c.stationedUnits.cavalry, 0);
+    const totalArtillery = game.cities.reduce((sum, c) => sum + c.stationedUnits.artillery, 0);
 
-if ((type === 'infantry' && totalInfantry === 11) ||
-(type === 'cavalry' && totalCavalry === 11) ||
-(type === 'artillery' && totalArtillery === 11)) {
-if (!game.tribalsDefeated && game.tribalRelation !== 'war') {
-game.tribalReputation = Math.max(0, game.tribalReputation - 10);
-addMessage(`Tribes alarmed by your ${unit.name} buildup! (-10 rep)`, 'warning');
-AudioManager.playSFX('sfx-alert', 0.5);
-}
-}
+    if ((type === 'infantry' && totalInfantry === 11) ||
+    (type === 'cavalry' && totalCavalry === 11) ||
+    (type === 'artillery' && totalArtillery === 11)) {
+        if (!game.tribalsDefeated && game.tribalRelation !== 'war') {
+            game.tribalReputation = Math.max(0, game.tribalReputation - 10);
+            addMessage(`Tribes alarmed by your ${unit.name} buildup! (-10 rep)`, 'warning');
+            AudioManager.playSFX('sfx-alert', 0.5);
+        }
+    }
 
+    spendResources(finalCost);
+    city.population -= popCost;
+    city.stationedUnits[type]++;
 
-spendResources(finalCost);
-city.population -= popCost;
-city.stationedUnits[type]++;
-
-addMessage(`Recruited ${unit.name} in ${city.name}!`, 'success');
-updateCityDisplay(city);
-updateCityUnitIcons(city);
-selectCity(city);
+    addMessage(`Recruited ${unit.name} in ${city.name}!`, 'success');
+    updateCityDisplay(city);
+    updateCityUnitIcons(city);
+    selectCity(city);
 }
 
 function provideCharity(cost, happiness) {
-if (!hasResources(cost)) {
-addMessage('Not enough resources for charity!', 'warning');
-return;
-}
-spendResources(cost);
-game.cities.forEach(city => {
-if (!city.isRebel) {
-    city.happiness = Math.min(100, city.happiness + happiness);
-}
-});
-addMessage(`Provided aid! All cities gained +${happiness} happiness.`, 'success');
+    if (!hasResources(cost)) {
+        addMessage('Not enough resources for charity!', 'warning');
+        return;
+    }
+    spendResources(cost);
+    game.cities.forEach(city => {
+        if (!city.isRebel) {
+            city.happiness = Math.min(100, city.happiness + happiness);
+        }
+    });
+    addMessage(`Provided aid! All cities gained +${happiness} happiness.`, 'success');
 }
 
 function tribalTrade() {
@@ -4374,37 +4565,37 @@ function buildEmbassy() {
     }
 
 function denounceTribes() {
-if (game.tribalRelation === 'war') return;
-if (game.peaceTreatyCooldown > 0) {
-addMessage('Cannot denounce during peace treaty!', 'warning');
-return;
-}
-game.tribalReputation = Math.max(0, game.tribalReputation - 30);
-addMessage('Denounced tribes! Relations worsened.', 'warning');
+    if (game.tribalRelation === 'war') return;
+    if (game.peaceTreatyCooldown > 0) {
+        addMessage('Cannot denounce during peace treaty!', 'warning');
+        return;
+    }
+    game.tribalReputation = Math.max(0, game.tribalReputation - 30);
+    addMessage('Denounced tribes! Relations worsened.', 'warning');
 }
 
 function declareWar() {
-if (game.tribalRelation === 'war') return;
-if (game.peaceTreatyCooldown > 0) {
-const yearsLeft = Math.ceil(game.peaceTreatyCooldown / 100);
-addMessage(`Peace treaty in effect for ${yearsLeft} more years!`, 'warning');
-return;
-}
-game.tribalRelation = 'war';
-game.tribalReputation = 0;
+    if (game.tribalRelation === 'war') return;
+    if (game.peaceTreatyCooldown > 0) {
+        const yearsLeft = Math.ceil(game.peaceTreatyCooldown / 100);
+        addMessage(`Peace treaty in effect for ${yearsLeft} more years!`, 'warning');
+        return;
+    }
+    game.tribalRelation = 'war';
+    game.tribalReputation = 0;
 
-AudioManager.playBattleMusic();
+    AudioManager.playBattleMusic();
 
-game.cities.forEach(city => {
-if (!city.isRebel) {
-    city.happiness = Math.max(0, city.happiness - 25);
-    updateCityDisplay(city);
-}
-});
+    game.cities.forEach(city => {
+    if (!city.isRebel) {
+        city.happiness = Math.max(0, city.happiness - 25);
+        updateCityDisplay(city);
+    }
+    });
 
-addMessage('WAR DECLARED! Tribes will fight back!', 'danger');
-addMessage('All cities lost 25 happiness due to war declaration!', 'warning');
-AudioManager.playSFX('sfx-alert', 0.7);
+    addMessage('WAR DECLARED! Tribes will fight back!', 'danger');
+    addMessage('All cities lost 25 happiness due to war declaration!', 'warning');
+    AudioManager.playSFX('sfx-alert', 0.7);
 }
 
 function updateTribalRelation() {
@@ -4490,7 +4681,6 @@ function updateUI() {
     document.getElementById('total-pop').textContent = totalPop;
     document.getElementById('research-display').textContent = Math.floor(game.researchPoints);
 
-
     const totalInfantry = game.cities.reduce((sum, c) => sum + c.stationedUnits.infantry, 0);
     const totalCavalry = game.cities.reduce((sum, c) => sum + c.stationedUnits.cavalry, 0);
     const totalArtillery = game.cities.reduce((sum, c) => sum + c.stationedUnits.artillery, 0);
@@ -4504,7 +4694,13 @@ function updateUI() {
     document.getElementById('tribal-rep').textContent = game.tribalReputation;
 
     document.getElementById('gather-btn').disabled = game.gatherCooldown > 0;
-    document.getElementById('build-city-btn').disabled = !hasResources({food: 200, metal: 200, energy: 100});
+    const baseCityCost = {
+        food: Math.floor(200 * (1 - TechTree.getTechBonus('cityCost'))),
+        metal: Math.floor(200 * (1 - TechTree.getTechBonus('cityCost'))),
+        energy: Math.floor(100 * (1 - TechTree.getTechBonus('cityCost')))
+    };
+
+    document.getElementById('build-city-btn').disabled = !hasResources(baseCityCost);
     document.getElementById('build-road-btn').disabled = !game.selectedCity || !hasResources({metal: 100, energy: 50}) || game.placingCity;
 
     document.getElementById('recruit-infantry-btn').disabled = !hasResources({food: 50, metal: 50, energy: 0}) || totalPop < 50;
@@ -4576,6 +4772,8 @@ function updateUI() {
 
     updateTribalRelation();
     updateSpaceportPanel();
+    updateRecruitButtonText();
+    updateRoadButtonText();
 }
 
     if (game.tribalTradeCooldown > 0) {
@@ -4698,6 +4896,22 @@ function updateUI() {
         document.getElementById('pause-btn').textContent = game.paused ? 'Resume' : 'Pause';
     };
 
+    document.querySelectorAll('.city').forEach(cityEl => {
+        cityEl.addEventListener('mouseenter', (e) => {
+            if (game.buildingRoad && game.roadStartCity) {
+                const cityId = parseInt(cityEl.id.replace('city-', ''));
+                const targetCity = game.cities.find(c => c.id === cityId);
+                if (targetCity && targetCity.id !== game.roadStartCity.id) {
+                    updateRoadButtonText(targetCity.x, targetCity.y);
+                }
+            }
+        });
+    });
+
+
+    let secretCode = [];
+    const secretSequence = ['q', 'w', 'e', 'r', 't', 'y', 'c', 'a', 's'];
+
     document.addEventListener('keydown', (e) => {
         if (game.ddrActive) {
             if (['ArrowLeft', 'ArrowUp', 'ArrowDown', 'ArrowRight'].includes(e.key)) {
@@ -4708,7 +4922,24 @@ function updateUI() {
             cancelCityPlacement();
             game.buildingRoad = false;
             game.roadStartCity = null;
+            WonderSystem.placingWonder = null;
             document.getElementById('build-road-btn').classList.remove('active');
+            document.getElementById('planet-view').classList.remove('placing-city');
+            updateRoadButtonText();
             document.getElementById('spaceport-panel').style.display = 'none';
+        } else {
+            secretCode.push(e.key.toLowerCase());
+            if (secretCode.length > secretSequence.length) {
+                secretCode.shift();
+            }
+
+            if (JSON.stringify(secretCode) === JSON.stringify(secretSequence)) {
+                game.resources.food += 5000;
+                game.resources.metal += 5000;
+                game.resources.energy += 5000;
+                addMessage('🎉 Secret code activated! +5000 FME', 'success');
+                AudioManager.playSFX('sfx-success', 0.9);
+                secretCode = [];
+            }
         }
     });
