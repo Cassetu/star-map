@@ -4260,32 +4260,52 @@ function createCityEntertainment(city) {
 }
 
 function spawnVisitor(city) {
-    if (!game.running || city.isRebel || !city.entertainmentDistricts || city.entertainmentDistricts.length === 0) return;
+    if (!game.running || city.isRebel) return;
 
     const cityEl = document.getElementById(`city-${city.id}`);
     if (!cityEl) return;
 
     const buildings = cityEl.querySelectorAll('.building-hut, .building-house, .building-skyscraper');
+    if (buildings.length === 0) return;
+
+    const shouldVisitWonder = Math.random() < 0.3;
+
+    let targetWonder = null;
+    if (shouldVisitWonder) {
+        const nearbyWonders = game.wonderLocations.filter(wLoc => {
+            const dist = Math.sqrt(Math.pow(wLoc.x - city.x, 2) + Math.pow(wLoc.y - city.y, 2));
+            return dist < 25 && WonderSystem.isWonderConnected(wLoc.key);
+        });
+
+        if (nearbyWonders.length > 0) {
+            targetWonder = nearbyWonders[Math.floor(Math.random() * nearbyWonders.length)];
+        }
+    }
+
     const entertainmentBuildings = cityEl.querySelectorAll('.entertainment-building');
 
-    if (buildings.length === 0 || entertainmentBuildings.length === 0) return;
+    if (!targetWonder && entertainmentBuildings.length === 0) return;
+
+    let targetX, targetY, isWonderTarget = false;
+
+    if (targetWonder) {
+        targetX = targetWonder.x;
+        targetY = targetWonder.y;
+        isWonderTarget = true;
+    } else {
+        const targetEntertainment = entertainmentBuildings[Math.floor(Math.random() * entertainmentBuildings.length)];
+        const targetRect = targetEntertainment.getBoundingClientRect();
+        const cityRect = cityEl.getBoundingClientRect();
+        targetX = ((targetRect.left + targetRect.width / 2) - cityRect.left) / cityRect.width * 100;
+        targetY = ((targetRect.top + targetRect.height / 2) - cityRect.top) / cityRect.height * 100;
+    }
 
     const startBuilding = buildings[Math.floor(Math.random() * buildings.length)];
-    const targetEntertainment = entertainmentBuildings[Math.floor(Math.random() * entertainmentBuildings.length)];
 
     const visitor = document.createElement('div');
     visitor.className = 'city-visitor';
 
     let visitorTypes = ['🚶', '🚶‍♀️', '🚶‍♂️', '👨', '👩', '🧑'];
-
-    if (targetEntertainment.classList.contains('entertainment-theater')) {
-        visitorTypes = ['🎭', '🎪', '👨', '👩', '🧑'];
-    } else if (targetEntertainment.classList.contains('entertainment-arena')) {
-        visitorTypes = ['⚽', '🏃', '🤾', '👨', '👩'];
-    } else if (targetEntertainment.classList.contains('entertainment-garden')) {
-        visitorTypes = ['🌸', '🦋', '👨', '👩', '👧', '👦'];
-    }
-
     visitor.textContent = visitorTypes[Math.floor(Math.random() * visitorTypes.length)];
     visitor.style.fontSize = '10px';
 
@@ -4298,17 +4318,26 @@ function spawnVisitor(city) {
     visitor.style.left = `${startX}%`;
     visitor.style.top = `${startY}%`;
 
-    cityEl.appendChild(visitor);
+    if (!isWonderTarget) {
+        cityEl.appendChild(visitor);
+    } else {
+        visitor.style.zIndex = '60';
+        document.getElementById('planet-view').appendChild(visitor);
+        visitor.style.left = `${city.x}%`;
+        visitor.style.top = `${city.y}%`;
+    }
 
-    const targetRect = targetEntertainment.getBoundingClientRect();
-    const targetX = ((targetRect.left + targetRect.width / 2) - cityRect.left) / cityRect.width * 100;
-    const targetY = ((targetRect.top + targetRect.height / 2) - cityRect.top) / cityRect.height * 100;
-
-    const distance = Math.sqrt(Math.pow(targetX - startX, 2) + Math.pow(targetY - startY, 2));
-    const travelTime = Math.max(1500, distance * 50);
+    let travelTime;
+    if (isWonderTarget) {
+        const distance = Math.sqrt(Math.pow(targetX - city.x, 2) + Math.pow(targetY - city.y, 2));
+        travelTime = Math.max(3000, distance * 150);
+    } else {
+        const distance = Math.sqrt(Math.pow(targetX - startX, 2) + Math.pow(targetY - startY, 2));
+        travelTime = Math.max(1500, distance * 50);
+    }
 
     setTimeout(() => {
-        visitor.style.transition = `left ${travelTime}ms linear, top ${travelTime}ms linear`;
+        visitor.style.transition = `all ${travelTime}ms linear`;
         visitor.style.left = `${targetX}%`;
         visitor.style.top = `${targetY}%`;
     }, 50);
@@ -4317,19 +4346,24 @@ function spawnVisitor(city) {
         visitor.classList.add('enjoying');
     }, travelTime + 100);
 
-    const enjoyTime = 3000 + Math.random() * 4000;
+    const enjoyTime = isWonderTarget ? 8000 + Math.random() * 6000 : 3000 + Math.random() * 4000;
 
     setTimeout(() => {
         visitor.classList.remove('enjoying');
-        visitor.style.transition = `left ${travelTime}ms linear, top ${travelTime}ms linear`;
-        visitor.style.left = `${startX}%`;
-        visitor.style.top = `${startY}%`;
+        visitor.style.transition = `all ${travelTime}ms linear`;
+        if (isWonderTarget) {
+            visitor.style.left = `${city.x}%`;
+            visitor.style.top = `${city.y}%`;
+        } else {
+            visitor.style.left = `${startX}%`;
+            visitor.style.top = `${startY}%`;
+        }
     }, travelTime + enjoyTime);
 
     setTimeout(() => {
         visitor.remove();
 
-        if (game.running && !city.isRebel && city.entertainmentDistricts && city.entertainmentDistricts.length > 0) {
+        if (game.running && !city.isRebel) {
             const respawnDelay = 8000 + Math.random() * 7000;
             setTimeout(() => {
                 if (game.running && !city.isRebel) {
