@@ -1604,7 +1604,8 @@ function update() {
 
                 if (city.foodStockpile >= 20) {
                     const baseGrowth = city.isConverted ? 0.3 : 0.5;
-                    const specGrowthMod = 1 + CITY_SPECIALIZATIONS[city.specialization].growthBonus;
+                    const specialization = city.specialization || 'none';
+                    const specGrowthMod = 1 + CITY_SPECIALIZATIONS[specialization].growthBonus;
                     const foodBonus = Math.min(1.5, city.foodStockpile / 50);
                     const techGrowthBonus = 1 + TechTree.getTechBonus('popGrowth');
                     const growthRate = (baseGrowth + (featureBonus.growthPenalty * 0.01)) * specGrowthMod * foodBonus * techGrowthBonus;
@@ -4328,6 +4329,7 @@ function convertTribalCity(tribal) {
         position: tribal.x, x: tribal.x, y: tribal.y,
         population: Math.max(100, Math.floor(tribal.population * 0.6)),
         maxPopulation: 750 + TechTree.getTechBonus('maxPopulation'),
+        specialization: 'none',
         warned: false,
         zoneType: getZoneType(tribal.x),
         isRebel: true, isConverted: true, upgradeLevel: 0,
@@ -4479,7 +4481,8 @@ function tribalBuildCity() {
 
 function updateRecruitButtonText() {
     const selectedCity = game.selectedCity && game.selectedType === 'city' ? game.selectedCity : null;
-    const specMod = selectedCity ? CITY_SPECIALIZATIONS[selectedCity.specialization].recruitCostMod : 1;
+    const specialization = selectedCity ? (selectedCity.specialization || 'none') : 'none';
+    const specMod = CITY_SPECIALIZATIONS[specialization].recruitCostMod;
 
     const infPopCost = Math.floor(50 * (1 - TechTree.getTechBonus('recruitmentCost')));
     const cavPopCost = Math.floor(100 * (1 - TechTree.getTechBonus('recruitmentCost')));
@@ -4998,6 +5001,11 @@ function updateUI() {
         energy: Math.floor(50 * (1 - TechTree.getTechBonus('roadCost')))
     };
 
+    const baseCityCost = {
+        food: Math.floor(200 * (1 - TechTree.getTechBonus('cityCost'))),
+        metal: Math.floor(200 * (1 - TechTree.getTechBonus('cityCost'))),
+        energy: Math.floor(100 * (1 - TechTree.getTechBonus('cityCost')))
+    };
     document.getElementById('build-city-btn').disabled = !hasResources(baseCityCost);
     document.getElementById('build-road-btn').disabled = !game.selectedCity || !hasResources(baseRoadCost) || game.placingCity;
 
