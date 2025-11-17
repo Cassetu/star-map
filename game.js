@@ -2051,6 +2051,7 @@ function beginBattle() {
     });
 
     const attackingCities = game.attackingCities.length > 0 ? game.attackingCities : [closestCity];
+    const tribal = game.currentBattle;
     attackingCities.forEach(city => {
         createMarchingArmy(city, tribal, true);
     });
@@ -3598,6 +3599,9 @@ function createMarchingArmy(fromEntity, toEntity, isPlayerArmy) {
     createArmyVisuals(armyMovement);
 
     setTimeout(() => {
+        if (armyMovement.animationFrame) {
+            cancelAnimationFrame(armyMovement.animationFrame);
+        }
         game.activeArmyMovements = game.activeArmyMovements.filter(m => m.id !== armyMovement.id);
         const container = document.getElementById(`army-${armyMovement.id}`);
         if (container) container.remove();
@@ -3671,32 +3675,37 @@ function createArmyVisuals(movement) {
 }
 
 function animateArmyMovement(movement, container) {
+    const startTime = Date.now();
+    const duration = movement.duration;
+
     const animate = () => {
-        const elapsed = Date.now() - movement.startTime;
-        const progress = Math.min(elapsed / movement.duration, 1);
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
 
         movement.currentX = movement.startX + (movement.endX - movement.startX) * progress;
         movement.currentY = movement.startY + (movement.endY - movement.startY) * progress;
 
+        const angle = Math.atan2(movement.endY - movement.startY, movement.endX - movement.startX) * 180 / Math.PI;
+
         container.style.left = `${movement.currentX}%`;
         container.style.top = `${movement.currentY}%`;
-
-        const angle = Math.atan2(movement.endY - movement.startY, movement.endX - movement.startX) * 180 / Math.PI;
         container.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
 
-        if (progress < 0.9) {
-            requestAnimationFrame(animate);
-        } else if (progress >= 0.9 && !movement.notificationShown) {
+        if (progress >= 0.9 && !movement.notificationShown) {
             movement.notificationShown = true;
             showArmyApproachingNotification(movement);
         }
 
         if (progress < 1) {
-            requestAnimationFrame(animate);
+            movement.animationFrame = requestAnimationFrame(animate);
+        } else {
+            if (movement.animationFrame) {
+                cancelAnimationFrame(movement.animationFrame);
+            }
         }
     };
 
-    requestAnimationFrame(animate);
+    movement.animationFrame = requestAnimationFrame(animate);
 }
 
 function showArmyApproachingNotification(movement) {
