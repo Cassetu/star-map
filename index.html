@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
-    <title>Equinox Line - V1.3</title>
+    <title>Equinox Line - V1.3.1</title>
     <link rel="icon" type="image/png" href="images/icon.png">
     <link href="style.css" rel="stylesheet"/>
 </head>
@@ -106,97 +106,134 @@
     </div>
 
     <div id="left-panel">
-        <div style="text-align: center; margin-bottom: 15px;">
-            <button id="sfx-toggle-btn" style="width: 100%; padding: 8px; background: rgba(0, 255, 0, 0.2); border: 2px solid #00ff00;">
-                🔊 SFX: ON
-            </button>
+        <div class="panel-tabs">
+            <div class="panel-tab active" data-tab="info">ℹ️</div>
+            <div class="panel-tab" data-tab="military">⚔️</div>
+            <div class="panel-tab" data-tab="livestock">🐄</div>
+            <div class="panel-tab" data-tab="laws">⚖️</div>
         </div>
 
-        <div id="info-panel"></div>
+        <div class="panel-content">
+            <div class="tab-content active" id="info-tab">
 
-        <div class="collapsible-section">
-            <div class="collapsible-header" onclick="toggleCollapsible('laws')">
-                <h4>CITY LAWS</h4>
-                <span class="collapsible-indicator" id="laws-indicator">▼</span>
+                <div id="info-panel"></div>
             </div>
-            <div class="collapsible-content" id="laws-content">
-                <p style="font-size: 10px; margin-bottom: 8px;"><strong>Current:</strong> <span id="current-law-name">No Special Laws</span>
-                </p>
-                <div id="laws-container">
-                    <div class="law-option active" data-law="none">
-                        <div class="law-title">No Special Laws</div>
-                        <div class="law-effects">Balanced approach</div>
+
+            <div class="tab-content" id="military-tab">
+                <h3 style="color: #ffaa00; font-size: 14px; margin-bottom: 10px;">RECRUITMENT</h3>
+                <p style="font-size: 10px; margin-bottom: 10px; opacity: 0.8;">Select a city first</p>
+
+                <div class="unit-type">
+                    <div class="unit-info">
+                        <div class="unit-name">Infantry</div>
+                        <div class="unit-stats">Atk:5 Def:3</div>
                     </div>
-                    <div class="law-option" data-law="relaxed">
-                        <div class="law-title">Relaxed Work</div>
-                        <div class="law-effects">-20% res, +1 happiness/yr</div>
+                </div>
+                <button class="action-btn" id="recruit-infantry-btn" style="font-size: 10px; padding: 5px;">Recruit Infantry (50F, 50M, 50pop)</button>
+
+                <div class="unit-type" style="margin-top: 6px;">
+                    <div class="unit-info">
+                        <div class="unit-name">Cavalry</div>
+                        <div class="unit-stats">Atk:12 Def:5</div>
                     </div>
-                    <div class="law-option" data-law="efficient">
-                        <div class="law-title">Efficiency</div>
-                        <div class="law-effects">+30% res, -0.5 happiness/yr</div>
+                </div>
+                <button class="action-btn" id="recruit-cavalry-btn" style="font-size: 10px; padding: 5px;">Recruit Cavalry (100F, 100M, 50E, 100pop)</button>
+
+                <div class="unit-type" style="margin-top: 6px;">
+                    <div class="unit-info">
+                        <div class="unit-name">Artillery</div>
+                        <div class="unit-stats">Atk:20 Def:2</div>
                     </div>
-                    <div class="law-option" data-law="productive">
-                        <div class="law-title">Production+</div>
-                        <div class="law-effects">+50% res, -1 happiness/yr</div>
+                </div>
+                <button class="action-btn" id="recruit-artillery-btn" style="font-size: 10px; padding: 5px;">Recruit Artillery (50F, 300M, 150E, 10pop)</button>
+            </div>
+
+            <div class="tab-content" id="livestock-tab">
+                <h3 style="color: #8B4513; font-size: 14px; margin-bottom: 10px;">LIVESTOCK MANAGEMENT</h3>
+
+                <div id="livestock-city-info" style="display: none;">
+                    <div style="background: rgba(139,69,19,0.2); padding: 8px; border-radius: 5px; margin-bottom: 10px;">
+                        <div style="font-size: 11px; font-weight: bold; margin-bottom: 5px;" id="livestock-city-name">City Name</div>
+                        <div style="font-size: 9px;">Capacity: <span id="livestock-capacity">0</span></div>
+                        <div style="font-size: 9px;">Total Animals: <span id="livestock-total">0</span></div>
                     </div>
-                    <div class="law-option" data-law="harsh">
-                        <div class="law-title">Harsh Labor</div>
-                        <div class="law-effects">+100% res, -2 happiness/yr</div>
+
+                    <div id="livestock-breakdown" style="margin-bottom: 10px;"></div>
+
+                    <div style="margin-top: 10px;">
+                        <button class="action-btn" id="hire-herders-btn" style="font-size: 10px; padding: 5px; width: 100%;">Hire Herders (100F, 50M)</button>
+                    </div>
+                </div>
+
+                <div id="livestock-no-city" style="text-align: center; padding: 20px; opacity: 0.7;">
+                    <div style="font-size: 32px; margin-bottom: 10px;">🐄</div>
+                    <p style="font-size: 11px;">Select a city to manage livestock</p>
+                </div>
+
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 2px solid rgba(139,69,19,0.3);">
+                    <h4 style="color: #8B4513; font-size: 12px; margin-bottom: 8px;">Global Market</h4>
+                    <div id="livestock-market" style="font-size: 10px;"></div>
+                </div>
+
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 2px solid rgba(139,69,19,0.3);">
+                    <h4 style="color: #8B4513; font-size: 12px; margin-bottom: 8px;">Wild Herds</h4>
+                    <div id="wild-herds-list" style="font-size: 10px;">
+                        <p style="opacity: 0.7;">No wild herds spotted</p>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="collapsible-section">
-            <div class="collapsible-header" onclick="toggleCollapsible('philanthropy')">
-                <h4>PHILANTHROPY</h4>
-                <span class="collapsible-indicator" id="philanthropy-indicator">▼</span>
-            </div>
-            <div class="collapsible-content" id="philanthropy-content">
-                <p style="font-size: 10px; margin-bottom: 8px;">Boost all cities' happiness</p>
-                <button class="action-btn" id="charity-small-btn" style="font-size: 10px; padding: 5px;">Small Aid +5
-                    (30F, 15M, 5E)
-                </button>
-                <button class="action-btn" id="charity-medium-btn" style="font-size: 10px; padding: 5px;">Medium Aid +15
-                    (90F, 45M, 15E)
-                </button>
-                <button class="action-btn" id="charity-large-btn" style="font-size: 10px; padding: 5px;">Large Aid +35
-                    (240F, 120M, 40E)
-                </button>
-            </div>
-        </div>
+            <div class="tab-content" id="laws-tab">
+                <div style="text-align: center; margin-bottom: 15px;">
+                    <button id="sfx-toggle-btn" style="width: 100%; padding: 8px; background: rgba(0, 255, 0, 0.2); border: 2px solid #00ff00;">
+                        🔊 SFX: ON
+                    </button>
+                </div>
+                <div class="collapsible-section">
+                    <div class="collapsible-header" onclick="toggleCollapsible('laws')">
+                        <h4>CITY LAWS</h4>
+                        <span class="collapsible-indicator" id="laws-indicator">▼</span>
+                    </div>
+                    <div class="collapsible-content open" id="laws-content">
+                        <p style="font-size: 10px; margin-bottom: 8px;"><strong>Current:</strong> <span id="current-law-name">No Special Laws</span></p>
+                        <div id="laws-container">
+                            <div class="law-option active" data-law="none">
+                                <div class="law-title">No Special Laws</div>
+                                <div class="law-effects">Balanced approach</div>
+                            </div>
+                            <div class="law-option" data-law="relaxed">
+                                <div class="law-title">Relaxed Work</div>
+                                <div class="law-effects">-20% res, +1 happiness/yr</div>
+                            </div>
+                            <div class="law-option" data-law="efficient">
+                                <div class="law-title">Efficiency</div>
+                                <div class="law-effects">+30% res, -0.5 happiness/yr</div>
+                            </div>
+                            <div class="law-option" data-law="productive">
+                                <div class="law-title">Production+</div>
+                                <div class="law-effects">+50% res, -1 happiness/yr</div>
+                            </div>
+                            <div class="law-option" data-law="harsh">
+                                <div class="law-title">Harsh Labor</div>
+                                <div class="law-effects">+100% res, -2 happiness/yr</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-        <div class="military-section">
-            <h4>RECRUITMENT (Select City First)</h4>
-            <div class="unit-type">
-                <div class="unit-info">
-                    <div class="unit-name">Infantry</div>
-                    <div class="unit-stats">Atk:5 Def:3</div>
+                <div class="collapsible-section">
+                    <div class="collapsible-header" onclick="toggleCollapsible('philanthropy')">
+                        <h4>PHILANTHROPY</h4>
+                        <span class="collapsible-indicator" id="philanthropy-indicator">▼</span>
+                    </div>
+                    <div class="collapsible-content open" id="philanthropy-content">
+                        <p style="font-size: 10px; margin-bottom: 8px;">Boost all cities' happiness</p>
+                        <button class="action-btn" id="charity-small-btn" style="font-size: 10px; padding: 5px;">Small Aid +5 (30F, 15M, 5E)</button>
+                        <button class="action-btn" id="charity-medium-btn" style="font-size: 10px; padding: 5px;">Medium Aid +15 (90F, 45M, 15E)</button>
+                        <button class="action-btn" id="charity-large-btn" style="font-size: 10px; padding: 5px;">Large Aid +35 (240F, 120M, 40E)</button>
+                    </div>
                 </div>
             </div>
-            <button class="action-btn" id="recruit-infantry-btn" style="font-size: 10px; padding: 5px;">Recruit Infantry
-                (50F, 50M, 50pop)
-            </button>
-
-            <div class="unit-type" style="margin-top: 6px;">
-                <div class="unit-info">
-                    <div class="unit-name">Cavalry</div>
-                    <div class="unit-stats">Atk:12 Def:5</div>
-                </div>
-            </div>
-            <button class="action-btn" id="recruit-cavalry-btn" style="font-size: 10px; padding: 5px;">Recruit Cavalry
-                (100F, 100M, 50E, 100pop)
-            </button>
-
-            <div class="unit-type" style="margin-top: 6px;">
-                <div class="unit-info">
-                    <div class="unit-name">Artillery</div>
-                    <div class="unit-stats">Atk:20 Def:2</div>
-                </div>
-            </div>
-            <button class="action-btn" id="recruit-artillery-btn" style="font-size: 10px; padding: 5px;">Recruit
-                Artillery (50F, 300M, 150E, 10pop)
-            </button>
         </div>
     </div>
 
@@ -229,14 +266,21 @@
             <button class="diplomacy-btn" id="embassy-btn">Embassy (200F, 200M, 100E)</button>
             <button class="diplomacy-btn" id="denounce-btn">Denounce (-30)</button>
             <button class="diplomacy-btn" id="declare-war-btn">War</button>
-            <button class="diplomacy-btn" id="negotiate-peace-btn" style="display: none;">Negotiate Peace (1000)
-            </button>
+            <button class="diplomacy-btn" id="negotiate-peace-btn" style="display: none;">Negotiate Peace (1000)</button>
         </div>
+
+        <div style="margin-top: 15px; padding-top: 15px; border-top: 2px solid rgba(255,136,0,0.3);">
+            <h4 style="color: #8B4513; font-size: 12px; margin-bottom: 8px;">🐄 Livestock Trade</h4>
+            <p style="font-size: 9px; opacity: 0.7; margin-bottom: 8px;">Trade animals with tribals (Friendly+ relations)</p>
+            <div id="tribal-livestock-trade"></div>
+        </div>
+
         <p style="font-size: 8px; margin-top: 8px; opacity: 0.7;">
             <strong>Relations:</strong> 0-20: War | 21-40: Hostile | 41-60: Neutral | 61-80: Friendly | 81-100: Allied
         </p>
 
         <div id="messages" style="margin-top: 20px;"></div>
+
     </div>
 
 

@@ -27,44 +27,125 @@ const UNIT_TYPES = {
     }
 };
 
+const LIVESTOCK_TYPES = {
+    cattle: {
+        name: 'Cattle',
+        icon: '🐄',
+        foodPerAnimal: 0.15,
+        breedRate: 0.02,
+        deathRate: 0.01,
+        tradeValue: 50,
+        pastureCost: 2
+    },
+    sheep: {
+        name: 'Sheep',
+        icon: '🐑',
+        foodPerAnimal: 0.08,
+        breedRate: 0.04,
+        deathRate: 0.015,
+        tradeValue: 30,
+        pastureCost: 1
+    },
+    chickens: {
+        name: 'Chickens',
+        icon: '🐔',
+        foodPerAnimal: 0.05,
+        breedRate: 0.08,
+        deathRate: 0.02,
+        tradeValue: 15,
+        pastureCost: 0.5
+    },
+    horses: {
+        name: 'Horses',
+        icon: '🐴',
+        foodPerAnimal: 0.02,
+        breedRate: 0.015,
+        deathRate: 0.008,
+        tradeValue: 100,
+        pastureCost: 3,
+        cavalryBonus: 0.1
+    }
+};
+
+const LIVESTOCK_DISASTERS = [
+    {
+        type: 'disease',
+        name: 'Livestock Disease',
+        icon: '🦠',
+        chance: 0.001,
+        effect: 'kill',
+        severity: 0.3,
+        description: 'Disease outbreak decimates herds'
+    },
+    {
+        type: 'stampede',
+        name: 'Stampede',
+        icon: '💨',
+        chance: 0.0005,
+        effect: 'bonus',
+        severity: 0.2,
+        description: 'Wild herd stampede brings extra animals'
+    },
+    {
+        type: 'predators',
+        name: 'Predator Attack',
+        icon: '🐺',
+        chance: 0.0008,
+        effect: 'kill',
+        severity: 0.15,
+        description: 'Predators attack the herds'
+    }
+];
+
 const CITY_SPECIALIZATIONS = {
-none: {
-    name: 'No Specialization',
-    resourceBonus: 0,
+    none: {
+        name: 'No Specialization',
+        resourceBonus: 0,
+        growthBonus: 0,
+        recruitCostMod: 1,
+        cost: 0,
+        icon: '🏘️',
+        description: 'Standard city'
+    },
+    military: {
+        name: 'Military Fortress',
+        resourceBonus: -0.2,
+        growthBonus: -0.1,
+        recruitCostMod: 0.75,
+        cost: { food: 200, metal: 250, energy: 50 },
+        icon: '⚔️',
+        description: '25% cheaper units, -20% resources, -10% growth'
+    },
+    trade: {
+    name: 'Trade Hub',
+    resourceBonus: 0.5,
     growthBonus: 0,
-    recruitCostMod: 1,
-    cost: 0,
-    icon: '🏘️',
-    description: 'Standard city'
-},
-military: {
-    name: 'Military Fortress',
-    resourceBonus: -0.2,
-    growthBonus: -0.1,
-    recruitCostMod: 0.75,
-    cost: { food: 200, metal: 250, energy: 50 },
-    icon: '⚔️',
-    description: '25% cheaper units, -20% resources, -10% growth'
-},
-trade: {
-name: 'Trade Hub',
-resourceBonus: 0.5,
-growthBonus: 0,
-recruitCostMod: 1.2,
-cost: { food: 150, metal: 200, energy: 50 },
-    icon: '💰',
-    description: '+50% resources, 20% more expensive units'
-},
-research: {
-    name: 'Research Center',
-    resourceBonus: 0.2,
-    growthBonus: 0.3,
-    recruitCostMod: 1,
-    cost: { food: 200, metal: 150, energy: 250 },
-    icon: '🔬',
-    description: '+20% resources, +30% growth, generates research',
-    researchRate: 0.1
-}
+    recruitCostMod: 1.2,
+    cost: { food: 150, metal: 200, energy: 50 },
+        icon: '💰',
+        description: '+50% resources, 20% more expensive units'
+    },
+    research: {
+        name: 'Research Center',
+        resourceBonus: 0.2,
+        growthBonus: 0.3,
+        recruitCostMod: 1,
+        cost: { food: 200, metal: 150, energy: 250 },
+        icon: '🔬',
+        description: '+20% resources, +30% growth, generates research',
+        researchRate: 0.1
+    },
+    ranch: {
+        name: 'Ranch',
+        resourceBonus: 0,
+        growthBonus: 0.2,
+        recruitCostMod: 1,
+        cost: { food: 300, metal: 150, energy: 50 },
+        icon: '🐄',
+        description: '+50% livestock capacity, +20% growth, cattle breed faster',
+        livestockCapacityBonus: 0.5,
+        livestockBreedBonus: 0.25
+    }
 };
 
 const ENTERTAINMENT_DISTRICTS = {
@@ -232,7 +313,11 @@ const PEACE_DEMANDS = [
 ];
 
 const game = {
-    running: false, paused: false, year: 0, resources: { food: 500, metal: 400, energy: 250 },
+    running: false, paused: false, year: 0,
+    resources: { food: 500, metal: 400, energy: 250, livestock: 0 },
+    livestock: { cattle: 0, sheep: 0, goats: 0 },
+    wildHerds: [],
+    livestockMarket: { cattle: 0, sheep: 0, chickens: 0, horses: 0 },
     researchPoints: 0,
     cities: [], roads: [], features: [], tribalCities: [], tribalRoads: [],
     habitableZone: { left: 35, width: 30 }, zoneShiftSpeed: -0.5,
@@ -814,7 +899,14 @@ function updateCityDisplay(city) {
 
 function selectCity(city) {
     game.selectedCity = city;
+    game.selectedCity = city;
     game.selectedType = 'city';
+
+    const currentTab = document.querySelector('.panel-tab.active')?.getAttribute('data-tab');
+    if (currentTab === 'livestock') {
+        updateLivestockPanel();
+    }
+
     updateRecruitButtonText();
     const foodColor = city.foodStockpile > 50 ? '#4CAF50' : (city.foodStockpile > 20 ? '#ffaa00' : '#ff4400');
     const foodText = `
@@ -1015,7 +1107,20 @@ function selectCity(city) {
         stationedUnitsText += `<p style="font-size: 9px; margin-top: 4px; color: #ff4400;">Military Oppression: -${penalty} happiness/yr</p>`;
     }
 
-    panel.innerHTML = `<h3>${city.name}</h3>${upgradeText}<div class="happiness-bar"><div class="happiness-fill" style="width: ${city.happiness}%; background: ${happinessColor};"></div><div class="happiness-text">${Math.floor(city.happiness)}</div></div><p><strong>Population:</strong> ${Math.floor(city.population)}/${city.maxPopulation}</p>${rebellionText}<p><strong>Status:</strong> ${inZone ? '✓ In Zone' : '⚠ Outside!'}</p><p><strong>Road Bonus:</strong> +${(roadBonus * 100).toFixed(0)}%</p>${featureText}${connectionsText}${stationedUnitsText}${foodText}${emergencyReliefText}${emergencyReliefButton}${entertainmentText}${entertainmentButtons}${governorText}${governorButtons}${specText}${specButtons}${upgradeBtn}${migrateBtn}`;
+    const livestockSection = city.livestock ? `
+        <div style="background: rgba(139,69,19,0.1); padding: 8px; border-radius: 5px; margin: 8px 0;">
+            <h4 style="color: #8B4513; font-size: 11px; margin-bottom: 5px;">🐄 Livestock</h4>
+            <p style="font-size: 9px;">Total: ${(city.livestock.cattle || 0) + (city.livestock.sheep || 0) + (city.livestock.chickens || 0) + (city.livestock.horses || 0)}/${city.livestockCapacity || 50}</p>
+            ${Object.keys(LIVESTOCK_TYPES).map(type => {
+                const count = city.livestock[type] || 0;
+                if (count === 0) return '';
+                return `<p style="font-size: 9px;">${LIVESTOCK_TYPES[type].icon} ${LIVESTOCK_TYPES[type].name}: ${count}</p>`;
+            }).join('')}
+            <button class="action-btn" onclick="switchTab('livestock')" style="font-size: 9px; padding: 4px; margin-top: 5px;">Manage Livestock</button>
+        </div>
+    ` : '';
+
+    panel.innerHTML = `<h3>${city.name}</h3>${upgradeText}<div class="happiness-bar"><div class="happiness-fill" style="width: ${city.happiness}%; background: ${happinessColor};"></div><div class="happiness-text">${Math.floor(city.happiness)}</div></div><p><strong>Population:</strong> ${Math.floor(city.population)}/${city.maxPopulation}</p>${rebellionText}<p><strong>Status:</strong> ${inZone ? '✓ In Zone' : '⚠ Outside!'}</p><p><strong>Road Bonus:</strong> +${(roadBonus * 100).toFixed(0)}%</p>${featureText}${connectionsText}${stationedUnitsText}${foodText}${emergencyReliefText}${emergencyReliefButton}${livestockSection}${entertainmentText}${entertainmentButtons}${governorText}${governorButtons}${specText}${specButtons}${upgradeBtn}${migrateBtn}`;
     document.getElementById('build-road-btn').disabled = false;
 }
 
@@ -1315,6 +1420,7 @@ function startGame() {
         cities: [], roads: [], features: [], tribalCities: [], tribalRoads: [],
         messages: [], selectedCity: null, spaceportProgress: 0, spaceportBuilding: false,
         spaceportYearStarted: 0,
+        livestock: { cattle: 0, sheep: 0, goats: 0 },
         wonderLocations: [],
         placingSpaceport: false, spaceportX: 0, spaceportY: 0,
         resources: { food: 500, metal: 400, energy: 250 }, year: 0,
@@ -1349,6 +1455,10 @@ function startGame() {
         y: 50,
         population: 150,
         maxPopulation: 500 + TechTree.getTechBonus('maxPopulation'),
+
+        livestock: { cattle: 0, sheep: 0, chickens: 0, horses: 0 },
+        livestockCapacity: 50,
+        hasHerders: false,
         warned: false,
         zoneType: getZoneType(50),
         isRebel: false,
@@ -1427,8 +1537,15 @@ function startGame() {
             if (city.entertainmentDistricts && city.entertainmentDistricts.length > 0) {
                 createCityEntertainment(city);
             }
+            if (city.hasHerders && !city.isRebel) {
+                createHerderUnit(city);
+            }
         });
     }, 3000);
+
+    for (let i = 0; i < 3; i++) {
+        spawnWildHerd();
+    }
 
     if (gameLoop) clearInterval(gameLoop);
     gameLoop = setInterval(update, 100);
@@ -1471,6 +1588,12 @@ function update() {
     }
 
     game.year += 0.01;
+
+    if (Math.random() < 0.003 && !game.paused) {
+        spawnWildHerd();
+    }
+
+    updateWildHerds();
 
     if (Math.floor(game.year * 10) % 10 === 0) {
             updateFeatureSharingIndicators();
@@ -1781,6 +1904,66 @@ function update() {
                 generateCityBuildings(cityEl, city);
             }
             city.lastPopulation = city.population;
+        }
+
+        if (!city.isRebel && city.livestock) {
+            const spec = CITY_SPECIALIZATIONS[city.specialization];
+            const isRanch = city.specialization === 'ranch';
+            const capacityBonus = isRanch ? (spec.livestockCapacityBonus || 0) : 0;
+            const breedBonus = isRanch ? (spec.livestockBreedBonus || 0) : 0;
+
+            city.livestockCapacity = Math.floor(50 + (city.population * 0.1) + (capacityBonus * 50));
+
+            const totalAnimals = (city.livestock.cattle || 0) + (city.livestock.sheep || 0) +
+                                (city.livestock.chickens || 0) + (city.livestock.horses || 0);
+
+            const inZone = isCityInHabitableZone(city);
+            const nearPasture = game.features.some(f => {
+                if (f.type !== 'pasture') return false;
+                const dist = Math.sqrt(Math.pow(city.x - f.x, 2) + Math.pow(city.y - f.y, 2));
+                return dist < CITY_FEATURE_RADIUS;
+            });
+
+            Object.keys(LIVESTOCK_TYPES).forEach(type => {
+                const livestock = LIVESTOCK_TYPES[type];
+                const count = city.livestock[type] || 0;
+
+                if (count > 0) {
+                    let breedRate = livestock.breedRate * (1 + breedBonus);
+                    let deathRate = livestock.deathRate;
+
+                    if (nearPasture) breedRate *= 1.5;
+                    if (!inZone) {
+                        deathRate *= 2;
+                        breedRate *= 0.5;
+                    }
+
+                    const overcrowded = totalAnimals > city.livestockCapacity * 0.9;
+                    if (overcrowded) {
+                        deathRate *= 1.5;
+                        breedRate *= 0.5;
+                    }
+
+                    const births = Math.random() < breedRate ? 1 : 0;
+                    const deaths = Math.random() < deathRate ? 1 : 0;
+
+                    city.livestock[type] = Math.max(0, count + births - deaths);
+
+                    const foodProduced = count * livestock.foodPerAnimal;
+                    game.resources.food += foodProduced;
+
+                    if (type === 'horses' && city.livestock.horses > 0) {
+                        const cavalryInCity = city.stationedUnits.cavalry;
+                        if (cavalryInCity > 0) {
+                            city.cavalryBonus = livestock.cavalryBonus;
+                        }
+                    }
+                }
+            });
+
+            if (Math.random() < 0.0015) {
+                checkLivestockDisaster(city);
+            }
         }
 
         updateCityDisplay(city);
@@ -2102,6 +2285,85 @@ function beginBattle() {
     }, travelTime);
 }
 
+function checkLivestockDisaster(city) {
+    const totalAnimals = (city.livestock.cattle || 0) + (city.livestock.sheep || 0) +
+                        (city.livestock.chickens || 0) + (city.livestock.horses || 0);
+
+    if (totalAnimals < 5) return;
+
+    const disaster = LIVESTOCK_DISASTERS.find(d => Math.random() < d.chance);
+    if (!disaster) return;
+
+    if (disaster.effect === 'kill') {
+        Object.keys(city.livestock).forEach(type => {
+            const count = city.livestock[type] || 0;
+            const losses = Math.floor(count * disaster.severity);
+            city.livestock[type] = Math.max(0, count - losses);
+        });
+
+        addMessage(`${disaster.icon} ${disaster.name} in ${city.name}! Lost ${Math.floor(disaster.severity * 100)}% of livestock`, 'danger');
+        AudioManager.playSFX('sfx-alert', 0.6);
+    } else if (disaster.effect === 'bonus') {
+        const types = Object.keys(LIVESTOCK_TYPES);
+        const luckyType = types[Math.floor(Math.random() * types.length)];
+        const bonus = Math.floor(totalAnimals * disaster.severity);
+
+        city.livestock[luckyType] = (city.livestock[luckyType] || 0) + bonus;
+
+        addMessage(`${disaster.icon} ${disaster.name} near ${city.name}! Gained ${bonus} ${LIVESTOCK_TYPES[luckyType].name}`, 'success');
+        AudioManager.playSFX('sfx-success', 0.7);
+    }
+
+    updateLivestockPanel();
+}
+
+function createHerderUnit(city) {
+    if (!city.hasHerders || city.isRebel) return;
+
+    const totalAnimals = (city.livestock.cattle || 0) + (city.livestock.sheep || 0) +
+                        (city.livestock.chickens || 0) + (city.livestock.horses || 0);
+
+    if (totalAnimals < 3) return;
+
+    const herder = document.createElement('div');
+    herder.className = 'herder-unit';
+    herder.textContent = ['🧑‍🌾', '👨‍🌾', '👩‍🌾'][Math.floor(Math.random() * 3)];
+
+    const angle = Math.random() * Math.PI * 2;
+    const distance = 8 + Math.random() * 10;
+    const targetX = city.x + Math.cos(angle) * distance;
+    const targetY = city.y + Math.sin(angle) * distance;
+
+    herder.style.left = `${city.x}%`;
+    herder.style.top = `${city.y}%`;
+    herder.style.fontSize = '14px';
+
+    document.getElementById('planet-view').appendChild(herder);
+
+    const travelTime = 2000 + Math.random() * 2000;
+
+    setTimeout(() => {
+        herder.style.transition = `left ${travelTime}ms linear, top ${travelTime}ms linear`;
+        herder.style.left = `${targetX}%`;
+        herder.style.top = `${targetY}%`;
+    }, 50);
+
+    const workTime = 4000 + Math.random() * 3000;
+
+    setTimeout(() => {
+        herder.style.transition = `left ${travelTime}ms linear, top ${travelTime}ms linear`;
+        herder.style.left = `${city.x}%`;
+        herder.style.top = `${city.y}%`;
+    }, travelTime + workTime);
+
+    setTimeout(() => {
+        herder.remove();
+
+        if (game.running && city.hasHerders && !city.isRebel) {
+            setTimeout(() => createHerderUnit(city), 3000 + Math.random() * 5000);
+        }
+    }, travelTime * 2 + workTime);
+}
 
 function updateCityInfoOnly(city) {
     const popBar = document.querySelector('.population-fill');
@@ -2397,7 +2659,13 @@ for (let i = 0; i < 40; i++) {
     const rand = Math.random();
     let type, foodBonus, metalBonus, energyBonus, growthPenalty;
 
-    if (rand > 0.92) {
+    if (rand > 0.88) {
+        type = 'pasture';
+        foodBonus = 12;
+        metalBonus = 0;
+        energyBonus = 0;
+        growthPenalty = 0;
+    } else if (rand > 0.92) {
         type = 'grove';
         foodBonus = 15;
         metalBonus = 0;
@@ -2561,7 +2829,11 @@ for (let i = 0; i < 25; i++) {
         } else if (feature.type === 'tundra') {
             el = document.createElement('div');
             el.className = 'tundra-feature';
+        } else if (feature.type === 'pasture') {
+            el = document.createElement('div');
+            el.className = 'pasture-feature';
         }
+
 
         el.style.left = `${feature.x}%`;
         el.style.top = `${feature.y}%`;
@@ -2660,6 +2932,10 @@ function createCity(x, y) {
         position: x, x, y,
         population: 100,
         maxPopulation: 500 + TechTree.getTechBonus('maxPopulation'),
+
+        livestock: { cattle: 0, sheep: 0, chickens: 0, horses: 0 },
+        livestockCapacity: 50,
+        hasHerders: false,
         warned: false,
         zoneType: getZoneType(x),
         isRebel: false,
@@ -2728,6 +3004,228 @@ function createCity(x, y) {
     setTimeout(() => {
         createCityWorkers(city);
     }, 2000);
+}
+
+function switchTab(tabName) {
+    document.querySelectorAll('.panel-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+
+    document.querySelector(`.panel-tab[data-tab="${tabName}"]`).classList.add('active');
+    document.getElementById(`${tabName}-tab`).classList.add('active');
+
+    AudioManager.playSFX('sfx-button-click', 0.3);
+
+    if (tabName === 'livestock') {
+        updateLivestockPanel();
+    }
+}
+
+function updateLivestockPanel() {
+    if (game.selectedCity && game.selectedType === 'city') {
+        const city = game.selectedCity;
+        document.getElementById('livestock-city-info').style.display = 'block';
+        document.getElementById('livestock-no-city').style.display = 'none';
+
+        document.getElementById('livestock-city-name').textContent = city.name;
+        document.getElementById('livestock-capacity').textContent = city.livestockCapacity || 50;
+
+        const totalAnimals = (city.livestock?.cattle || 0) +
+                           (city.livestock?.sheep || 0) +
+                           (city.livestock?.chickens || 0) +
+                           (city.livestock?.horses || 0);
+        document.getElementById('livestock-total').textContent = totalAnimals;
+
+        const breakdown = document.getElementById('livestock-breakdown');
+        breakdown.innerHTML = '';
+
+        Object.keys(LIVESTOCK_TYPES).forEach(type => {
+            const livestock = LIVESTOCK_TYPES[type];
+            const count = city.livestock?.[type] || 0;
+            const marketCount = game.livestockMarket[type] || 0;
+
+            const row = document.createElement('div');
+            row.className = 'livestock-animal-row';
+            row.innerHTML = `
+                <span class="livestock-animal-icon">${livestock.icon}</span>
+                <div class="livestock-animal-info">
+                    <div>${livestock.name}</div>
+                    <div style="opacity: 0.7; font-size: 9px;">+${livestock.foodPerAnimal}F/tick</div>
+                </div>
+                <div class="livestock-animal-count">${count}</div>
+            `;
+
+            if (count > 0 || marketCount > 0) {
+                const actions = document.createElement('div');
+                actions.style.cssText = 'margin-top: 5px; display: flex; gap: 3px; flex-wrap: wrap;';
+
+                if (marketCount > 0) {
+                    const buyBtn = document.createElement('button');
+                    buyBtn.className = 'action-btn';
+                    buyBtn.style.cssText = 'font-size: 8px; padding: 3px 6px;';
+                    buyBtn.textContent = `Buy (${marketCount})`;
+                    buyBtn.onclick = () => buyFromMarket(type);
+                    actions.appendChild(buyBtn);
+                }
+
+                if (count > 0) {
+                    const sellBtn = document.createElement('button');
+                    sellBtn.className = 'action-btn';
+                    sellBtn.style.cssText = 'font-size: 8px; padding: 3px 6px;';
+                    sellBtn.textContent = 'Sell';
+                    sellBtn.onclick = () => sellToMarket(type);
+                    actions.appendChild(sellBtn);
+
+                    const transferBtn = document.createElement('button');
+                    transferBtn.className = 'action-btn';
+                    transferBtn.style.cssText = 'font-size: 8px; padding: 3px 6px;';
+                    transferBtn.textContent = 'Transfer';
+                    transferBtn.onclick = () => openLivestockTransfer(type);
+                    actions.appendChild(transferBtn);
+                }
+
+                row.appendChild(actions);
+            }
+
+            breakdown.appendChild(row);
+        });
+
+        const herderBtn = document.getElementById('hire-herders-btn');
+        if (city.hasHerders) {
+            herderBtn.textContent = 'Herders Active ✓';
+            herderBtn.disabled = true;
+            herderBtn.style.opacity = '0.6';
+        } else {
+            herderBtn.textContent = 'Hire Herders (100F, 50M)';
+            herderBtn.disabled = false;
+            herderBtn.style.opacity = '1';
+        }
+    } else {
+        document.getElementById('livestock-city-info').style.display = 'none';
+        document.getElementById('livestock-no-city').style.display = 'block';
+    }
+
+    const marketDiv = document.getElementById('livestock-market');
+    marketDiv.innerHTML = '';
+    Object.keys(LIVESTOCK_TYPES).forEach(type => {
+        const livestock = LIVESTOCK_TYPES[type];
+        const available = game.livestockMarket[type] || 0;
+
+        const p = document.createElement('p');
+        p.style.marginBottom = '5px';
+        p.innerHTML = `${livestock.icon} ${livestock.name}: ${available} available`;
+        marketDiv.appendChild(p);
+    });
+}
+
+function buyFromMarket(type) {
+    if (!game.selectedCity || game.selectedType !== 'city') return;
+
+    const city = game.selectedCity;
+    const livestock = LIVESTOCK_TYPES[type];
+
+    if ((game.livestockMarket[type] || 0) < 1) {
+        addMessage('No animals available in market!', 'warning');
+        return;
+    }
+
+    const totalAnimals = (city.livestock.cattle || 0) + (city.livestock.sheep || 0) +
+                        (city.livestock.chickens || 0) + (city.livestock.horses || 0);
+
+    if (totalAnimals >= city.livestockCapacity) {
+        addMessage(`${city.name} is at capacity!`, 'warning');
+        return;
+    }
+
+    game.livestockMarket[type] -= 1;
+    city.livestock[type] = (city.livestock[type] || 0) + 1;
+
+    addMessage(`Bought 1 ${livestock.name} for ${city.name}!`, 'success');
+    AudioManager.playSFX('sfx-success', 0.4);
+    updateLivestockPanel();
+}
+
+function sellToMarket(type) {
+    if (!game.selectedCity || game.selectedType !== 'city') return;
+
+    const city = game.selectedCity;
+    const livestock = LIVESTOCK_TYPES[type];
+
+    if ((city.livestock[type] || 0) < 1) {
+        addMessage('No animals to sell!', 'warning');
+        return;
+    }
+
+    city.livestock[type] -= 1;
+    game.livestockMarket[type] = (game.livestockMarket[type] || 0) + 1;
+
+    addMessage(`Sold 1 ${livestock.name} to market!`, 'success');
+    AudioManager.playSFX('sfx-success', 0.4);
+    updateLivestockPanel();
+}
+
+function openLivestockTransfer(type) {
+    if (!game.selectedCity || game.selectedType !== 'city') return;
+
+    const fromCity = game.selectedCity;
+    const livestock = LIVESTOCK_TYPES[type];
+
+    if ((fromCity.livestock[type] || 0) < 1) {
+        addMessage('No animals to transfer!', 'warning');
+        return;
+    }
+
+    const otherCities = game.cities.filter(c => c.id !== fromCity.id && !c.isRebel);
+    if (otherCities.length === 0) {
+        addMessage('No other cities to transfer to!', 'warning');
+        return;
+    }
+
+    const panel = document.getElementById('info-panel');
+    panel.innerHTML = `<h3>Transfer ${livestock.icon} ${livestock.name}</h3>
+        <p style="font-size: 10px; margin-bottom: 10px;">From: ${fromCity.name}</p>
+        <p style="font-size: 10px; margin-bottom: 10px;">Select destination:</p>`;
+
+    otherCities.forEach(city => {
+        const totalAnimals = (city.livestock.cattle || 0) + (city.livestock.sheep || 0) +
+                            (city.livestock.chickens || 0) + (city.livestock.horses || 0);
+        const hasSpace = totalAnimals < city.livestockCapacity;
+
+        const btn = document.createElement('button');
+        btn.className = 'action-btn';
+        btn.style.cssText = 'font-size: 10px; padding: 5px; margin: 3px 0; width: 100%;';
+        btn.textContent = `${city.name} (${totalAnimals}/${city.livestockCapacity})`;
+        btn.disabled = !hasSpace;
+        btn.onclick = () => transferLivestock(type, fromCity.id, city.id);
+        panel.appendChild(btn);
+    });
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'action-btn';
+    cancelBtn.style.cssText = 'font-size: 10px; padding: 5px; margin-top: 10px; width: 100%;';
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.onclick = () => selectCity(fromCity);
+    panel.appendChild(cancelBtn);
+}
+
+function transferLivestock(type, fromCityId, toCityId) {
+    const fromCity = game.cities.find(c => c.id === fromCityId);
+    const toCity = game.cities.find(c => c.id === toCityId);
+
+    if (!fromCity || !toCity) return;
+
+    fromCity.livestock[type] = (fromCity.livestock[type] || 0) - 1;
+    toCity.livestock[type] = (toCity.livestock[type] || 0) + 1;
+
+    const livestock = LIVESTOCK_TYPES[type];
+    addMessage(`Transferred ${livestock.icon} ${livestock.name}: ${fromCity.name} → ${toCity.name}`, 'success');
+    AudioManager.playSFX('sfx-success', 0.5);
+
+    selectCity(fromCity);
+    updateLivestockPanel();
 }
 
 function adjustBuildingPositions(buildings, centerX, centerY) {
@@ -3457,7 +3955,8 @@ function generateTribalCities() {
             id: tribalIdCounter++,
             name: name,
             x, y, population: 250, maxPopulation: 750, isConverted: false,
-            units: { infantry: 0, cavalry: 1, artillery: 1 }
+            units: { infantry: 0, cavalry: 1, artillery: 1 },
+            livestock: { cattle: 5, sheep: 8, chickens: 12, horses: 2 }
         };
 
         game.tribalCities.push(tribal);
@@ -3577,59 +4076,202 @@ function updatePlayerTribalRoadPosition(roadEl, road) {
 }
 
 function selectTribalCity(tribal) {
-game.selectedCity = tribal;
-game.selectedType = 'tribal';
+    game.selectedCity = tribal;
+    game.selectedType = 'tribal';
 
-const panel = document.getElementById('info-panel');
-const distance = getClosestPlayerCityDistance(tribal);
-const closestCity = getClosestPlayerCity(tribal);
+    const panel = document.getElementById('info-panel');
+    const distance = getClosestPlayerCityDistance(tribal);
+    const closestCity = getClosestPlayerCity(tribal);
 
-if (game.tribalsDefeated) {
-    panel.innerHTML = `<h3>${tribal.name}</h3><p style="color: #666;">✓ Tribals Defeated</p><p><strong>Position:</strong> ${tribal.x.toFixed(1)}%</p><p style="font-size: 10px; opacity: 0.7;">This civilization has been conquered.</p>`;
+    if (game.tribalsDefeated) {
+        panel.innerHTML = `<h3>${tribal.name}</h3><p style="color: #666;">✓ Tribals Defeated</p><p><strong>Position:</strong> ${tribal.x.toFixed(1)}%</p><p style="font-size: 10px; opacity: 0.7;">This civilization has been conquered.</p>`;
+        panel.style.display = 'block';
+        return;
+    }
+
+    const statusText = tribal.isConverted
+        ? '<p style="color: #00ff00;">✓ Converted</p>'
+        : `<p style="color: #ff4400;">Tribal (${game.tribalRelation})</p>`;
+
+    let unitsText = '';
+    if (!tribal.isConverted) {
+        const isScouted = isTribalScouted(tribal.id);
+        const isWartime = game.tribalRelation === 'war';
+
+        if (!isWartime || isScouted) {
+            unitsText = `<p style="font-size: 10px;"><strong>Forces:</strong> ${tribal.units.infantry} Inf, ${tribal.units.cavalry} Cav, ${tribal.units.artillery} Art</p>`;
+        } else {
+            unitsText = `<p style="font-size: 10px; color: #ff4400;"><strong>Forces:</strong> Unknown (Scout to reveal)</p>`;
+        }
+    }
+
+    const cityHasUnits = closestCity && (closestCity.stationedUnits.infantry > 0 || closestCity.stationedUnits.cavalry > 0 || closestCity.stationedUnits.artillery > 0);
+    const attackBtn = !tribal.isConverted && game.tribalRelation === 'war' && cityHasUnits
+    ? `<button class="action-btn" onclick="attackTribalCity(${tribal.id})">Attack City</button>`
+    : '';
+
+    panel.innerHTML = `<h3>${tribal.name}</h3>${statusText}<p><strong>Position:</strong> ${tribal.x.toFixed(1)}%</p><p><strong>Population:</strong> ${Math.floor(tribal.population)}</p>${unitsText}<p><strong>Distance:</strong> ${distance.toFixed(1)}%</p>${attackBtn}`;
     panel.style.display = 'block';
-    return;
-}
-
-const statusText = tribal.isConverted
-    ? '<p style="color: #00ff00;">✓ Converted</p>'
-    : `<p style="color: #ff4400;">Tribal (${game.tribalRelation})</p>`;
-
-let unitsText = '';
-if (!tribal.isConverted) {
-    const isScouted = isTribalScouted(tribal.id);
-    const isWartime = game.tribalRelation === 'war';
-
-    if (!isWartime || isScouted) {
-        unitsText = `<p style="font-size: 10px;"><strong>Forces:</strong> ${tribal.units.infantry} Inf, ${tribal.units.cavalry} Cav, ${tribal.units.artillery} Art</p>`;
-    } else {
-        unitsText = `<p style="font-size: 10px; color: #ff4400;"><strong>Forces:</strong> Unknown (Scout to reveal)</p>`;
-    }
-}
-
-const cityHasUnits = closestCity && (closestCity.stationedUnits.infantry > 0 || closestCity.stationedUnits.cavalry > 0 || closestCity.stationedUnits.artillery > 0);
-const attackBtn = !tribal.isConverted && game.tribalRelation === 'war' && cityHasUnits
-? `<button class="action-btn" onclick="attackTribalCity(${tribal.id})">Attack City</button>`
-: '';
-
-panel.innerHTML = `<h3>${tribal.name}</h3>${statusText}<p><strong>Position:</strong> ${tribal.x.toFixed(1)}%</p><p><strong>Population:</strong> ${Math.floor(tribal.population)}</p>${unitsText}<p><strong>Distance:</strong> ${distance.toFixed(1)}%</p>${attackBtn}`;
-panel.style.display = 'block';
 }
 
 
 
-    function getClosestPlayerCityDistance(tribal) {
-        if (game.cities.length === 0) return 999;
-        return Math.min(...game.cities.map(city => Math.sqrt(Math.pow(tribal.x - city.x, 2) + Math.pow(tribal.y - city.y, 2))));
+function getClosestPlayerCityDistance(tribal) {
+    if (game.cities.length === 0) return 999;
+    return Math.min(...game.cities.map(city => Math.sqrt(Math.pow(tribal.x - city.x, 2) + Math.pow(tribal.y - city.y, 2))));
+}
+
+function getClosestPlayerCity(tribal) {
+    if (game.cities.length === 0) return null;
+    return game.cities.reduce((closest, city) => {
+        const dist = Math.sqrt(Math.pow(tribal.x - city.x, 2) + Math.pow(tribal.y - city.y, 2));
+        const closestDist = Math.sqrt(Math.pow(tribal.x - closest.x, 2) + Math.pow(tribal.y - closest.y, 2));
+        return dist < closestDist ? city : closest;
+    });
+}
+
+function spawnWildHerd() {
+    if (game.wildHerds.length >= 15) return;
+
+    const types = ['cattle', 'sheep', 'chickens', 'horses'];
+    const type = types[Math.floor(Math.random() * types.length)];
+
+    const x = Math.random() * 90 + 5;
+    const y = Math.random() * 80 + 10;
+
+    const size = Math.floor(Math.random() * 8) + 3;
+
+    const herd = {
+        id: Date.now() + Math.random(),
+        type: type,
+        size: size,
+        x: x,
+        y: y,
+        wanderAngle: Math.random() * Math.PI * 2,
+        despawnTimer: 3000 + Math.random() * 2000
+    };
+
+    game.wildHerds.push(herd);
+    createWildHerdElement(herd);
+}
+
+function createWildHerdElement(herd) {
+    const el = document.createElement('div');
+    el.className = 'wild-herd';
+    el.id = `wild-herd-${herd.id}`;
+    el.style.left = `${herd.x}%`;
+    el.style.top = `${herd.y}%`;
+    el.style.transform = 'translate(-50%, -50%)';
+
+    const livestock = LIVESTOCK_TYPES[herd.type];
+    el.innerHTML = `
+        <div style="font-size: 20px; text-align: center;">${livestock.icon}</div>
+        <div style="font-size: 8px; text-align: center; background: rgba(0,0,0,0.8); padding: 2px; border-radius: 3px; margin-top: 2px;">
+            ${herd.size} ${livestock.name}
+        </div>
+    `;
+
+    el.onclick = (e) => {
+        e.stopPropagation();
+        selectWildHerd(herd);
+    };
+
+    document.getElementById('planet-view').appendChild(el);
+}
+
+function selectWildHerd(herd) {
+    const panel = document.getElementById('info-panel');
+    const livestock = LIVESTOCK_TYPES[herd.type];
+
+    const nearestCity = game.cities.reduce((nearest, city) => {
+        const dist = Math.sqrt(Math.pow(city.x - herd.x, 2) + Math.pow(city.y - herd.y, 2));
+        if (!nearest || dist < nearest.dist) {
+            return { city: city, dist: dist };
+        }
+        return nearest;
+    }, null);
+
+    const canCapture = nearestCity && nearestCity.dist < 20 && nearestCity.city.hasHerders;
+
+    panel.innerHTML = `
+        <h3>${livestock.icon} Wild ${livestock.name}</h3>
+        <p><strong>Herd Size:</strong> ${herd.size}</p>
+        <p><strong>Position:</strong> ${herd.x.toFixed(1)}%, ${herd.y.toFixed(1)}%</p>
+        ${nearestCity ? `<p><strong>Nearest City:</strong> ${nearestCity.city.name} (${nearestCity.dist.toFixed(1)}%)</p>` : ''}
+        ${canCapture ?
+            `<button class="action-btn" onclick="captureWildHerd(${herd.id})">Capture Herd (Herders Required)</button>` :
+            `<p style="color: #ff4400; font-size: 10px;">Need herders within 20% to capture</p>`
+        }
+    `;
+    panel.style.display = 'block';
+}
+
+function captureWildHerd(herdId) {
+    const herd = game.wildHerds.find(h => h.id === herdId);
+    if (!herd) return;
+
+    const nearestCity = game.cities.reduce((nearest, city) => {
+        const dist = Math.sqrt(Math.pow(city.x - herd.x, 2) + Math.pow(city.y - herd.y, 2));
+        if (!nearest || dist < nearest.dist) {
+            return { city: city, dist: dist };
+        }
+        return nearest;
+    }, null);
+
+    if (!nearestCity || nearestCity.dist >= 20 || !nearestCity.city.hasHerders) {
+        addMessage('Cannot capture herd - need herders within range!', 'warning');
+        return;
     }
 
-    function getClosestPlayerCity(tribal) {
-        if (game.cities.length === 0) return null;
-        return game.cities.reduce((closest, city) => {
-            const dist = Math.sqrt(Math.pow(tribal.x - city.x, 2) + Math.pow(tribal.y - city.y, 2));
-            const closestDist = Math.sqrt(Math.pow(tribal.x - closest.x, 2) + Math.pow(tribal.y - closest.y, 2));
-            return dist < closestDist ? city : closest;
-        });
+    const city = nearestCity.city;
+    const totalAnimals = (city.livestock.cattle || 0) + (city.livestock.sheep || 0) +
+                        (city.livestock.chickens || 0) + (city.livestock.horses || 0);
+
+    if (totalAnimals + herd.size > city.livestockCapacity) {
+        addMessage(`${city.name} doesn't have enough capacity!`, 'warning');
+        return;
     }
+
+    city.livestock[herd.type] = (city.livestock[herd.type] || 0) + herd.size;
+
+    addMessage(`Captured ${herd.size} wild ${LIVESTOCK_TYPES[herd.type].name} for ${city.name}!`, 'success');
+    AudioManager.playSFX('sfx-success', 0.7);
+
+    const el = document.getElementById(`wild-herd-${herd.id}`);
+    if (el) el.remove();
+
+    game.wildHerds = game.wildHerds.filter(h => h.id !== herd.id);
+
+    document.getElementById('info-panel').style.display = 'none';
+    updateLivestockPanel();
+}
+
+function updateWildHerds() {
+    game.wildHerds.forEach((herd, index) => {
+        herd.despawnTimer--;
+
+        if (herd.despawnTimer <= 0) {
+            const el = document.getElementById(`wild-herd-${herd.id}`);
+            if (el) el.remove();
+            game.wildHerds.splice(index, 1);
+            return;
+        }
+
+        herd.wanderAngle += (Math.random() - 0.5) * 0.3;
+
+        herd.x += Math.cos(herd.wanderAngle) * 0.02;
+        herd.y += Math.sin(herd.wanderAngle) * 0.02;
+
+        herd.x = Math.max(5, Math.min(95, herd.x));
+        herd.y = Math.max(10, Math.min(90, herd.y));
+
+        const el = document.getElementById(`wild-herd-${herd.id}`);
+        if (el) {
+            el.style.left = `${herd.x}%`;
+            el.style.top = `${herd.y}%`;
+        }
+    });
+}
 
 function getTotalAttack(city) {
     const infAttack = city.stationedUnits.infantry * UNIT_TYPES.infantry.attack;
@@ -5132,6 +5774,14 @@ function updateMinimap() {
         }
     });
 
+    game.wildHerds.forEach(herd => {
+        const dot = document.createElement('div');
+        dot.className = 'minimap-herd';
+        dot.style.left = `${herd.x}%`;
+        dot.style.top = `${herd.y}%`;
+        minimap.appendChild(dot);
+    });
+
     if (game.activeArmyMovements) {
         game.activeArmyMovements.forEach(movement => {
             const armyDot = document.createElement('div');
@@ -5433,10 +6083,14 @@ function convertTribalCity(tribal) {
 
     const city = {
         id: cityIdCounter++,
-        name: tribal.name + ' (Claimed)',
-        position: tribal.x, x: tribal.x, y: tribal.y,
-        population: Math.max(100, Math.floor(tribal.population * 0.6)),
-        maxPopulation: 750 + TechTree.getTechBonus('maxPopulation'),
+        name: getCityName(),
+        position: x, x, y,
+        population: 100,
+        maxPopulation: 500 + TechTree.getTechBonus('maxPopulation'),
+
+        livestock: { cattle: 0, sheep: 0, chickens: 0, horses: 0 },
+        livestockCapacity: 50,
+        hasHerders: false,
         specialization: 'none',
         warned: false,
         zoneType: getZoneType(tribal.x),
@@ -5606,13 +6260,141 @@ function tribalBuildCity() {
     const tribal = {
         id: tribalIdCounter++,
         name: name,
-        x, y, population: 340, maxPopulation: 750, isConverted: false,
-        units: { infantry: 1, cavalry: 1, artillery: 0 }
+        x, y, population: 250, maxPopulation: 750, isConverted: false,
+        units: { infantry: 0, cavalry: 1, artillery: 1 },
+        livestock: { cattle: 2, sheep: 1, chickens: 5, horses: 0 }
     };
 
     game.tribalCities.push(tribal);
     createTribalCityElement(tribal);
     addMessage('Tribes founded a new city!', 'danger');
+}
+
+function updateTribalLivestockTrade() {
+    const container = document.getElementById('tribal-livestock-trade');
+    if (!container) return;
+
+    if (game.tribalRelation !== 'friendly' && game.tribalRelation !== 'allied' || game.tribalsDefeated) {
+        container.innerHTML = '<p style="font-size: 9px; opacity: 0.6;">Need Friendly relations to trade livestock</p>';
+        return;
+    }
+
+    container.innerHTML = '';
+
+    const activeTribals = game.tribalCities.filter(t => !t.isConverted);
+    if (activeTribals.length === 0) {
+        container.innerHTML = '<p style="font-size: 9px; opacity: 0.6;">No tribal cities available</p>';
+        return;
+    }
+
+    const tribalLivestock = {
+        cattle: 0,
+        sheep: 0,
+        chickens: 0,
+        horses: 0
+    };
+
+    activeTribals.forEach(tribal => {
+        Object.keys(tribalLivestock).forEach(type => {
+            tribalLivestock[type] += tribal.livestock[type] || 0;
+        });
+    });
+
+    Object.keys(LIVESTOCK_TYPES).forEach(type => {
+        const livestock = LIVESTOCK_TYPES[type];
+        const available = tribalLivestock[type];
+
+        if (available < 2) return;
+
+        const buyPrice = Math.floor(livestock.tradeValue * 1.5);
+        const sellPrice = Math.floor(livestock.tradeValue * 0.8);
+
+        const row = document.createElement('div');
+        row.style.cssText = 'display: flex; align-items: center; justify-content: space-between; margin: 5px 0; padding: 5px; background: rgba(139,69,19,0.1); border-radius: 3px;';
+        row.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 5px; flex: 1;">
+                <span style="font-size: 14px;">${livestock.icon}</span>
+                <span style="font-size: 9px;">${livestock.name} (${available})</span>
+            </div>
+            <div style="display: flex; gap: 3px;">
+                <button class="diplomacy-btn" onclick="buyLivestockFromTribals('${type}')" style="font-size: 8px; padding: 3px 6px;">Buy ${buyPrice}M</button>
+                <button class="diplomacy-btn" onclick="sellLivestockToTribals('${type}')" style="font-size: 8px; padding: 3px 6px;">Sell ${sellPrice}M</button>
+            </div>
+        `;
+        container.appendChild(row);
+    });
+}
+
+function buyLivestockFromTribals(type) {
+    if (game.tribalRelation !== 'friendly' && game.tribalRelation !== 'allied') {
+        addMessage('Need Friendly relations to trade!', 'warning');
+        return;
+    }
+
+    const livestock = LIVESTOCK_TYPES[type];
+    const price = Math.floor(livestock.tradeValue * 1.5);
+
+    if (game.resources.metal < price) {
+        addMessage('Not enough metal!', 'warning');
+        return;
+    }
+
+    const activeTribals = game.tribalCities.filter(t => !t.isConverted && (t.livestock[type] || 0) >= 2);
+    if (activeTribals.length === 0) {
+        addMessage('Tribals have no animals to sell!', 'warning');
+        return;
+    }
+
+    const seller = activeTribals[Math.floor(Math.random() * activeTribals.length)];
+    seller.livestock[type] -= 1;
+
+    game.resources.metal -= price;
+    game.livestockMarket[type] = (game.livestockMarket[type] || 0) + 1;
+    game.tribalReputation = Math.min(100, game.tribalReputation + 2);
+
+    addMessage(`Bought 1 ${livestock.name} from ${seller.name}!`, 'success');
+    AudioManager.playSFX('sfx-success', 0.5);
+
+    updateTribalLivestockTrade();
+    updateLivestockPanel();
+}
+
+function sellLivestockToTribals(type) {
+    if (game.tribalRelation !== 'friendly' && game.tribalRelation !== 'allied') {
+        addMessage('Need Friendly relations to trade!', 'warning');
+        return;
+    }
+
+    const playerTotal = game.cities.reduce((sum, city) => {
+        return sum + (city.livestock[type] || 0);
+    }, 0);
+
+    if (playerTotal < 1) {
+        addMessage(`You don't have any ${LIVESTOCK_TYPES[type].name} to sell!`, 'warning');
+        return;
+    }
+
+    const livestock = LIVESTOCK_TYPES[type];
+    const price = Math.floor(livestock.tradeValue * 0.8);
+
+    const cityWithAnimals = game.cities.find(c => (c.livestock[type] || 0) >= 1);
+    if (!cityWithAnimals) return;
+
+    cityWithAnimals.livestock[type] -= 1;
+    game.resources.metal += price;
+    game.tribalReputation = Math.min(100, game.tribalReputation + 1);
+
+    const activeTribals = game.tribalCities.filter(t => !t.isConverted);
+    if (activeTribals.length > 0) {
+        const buyer = activeTribals[Math.floor(Math.random() * activeTribals.length)];
+        buyer.livestock[type] = (buyer.livestock[type] || 0) + 1;
+    }
+
+    addMessage(`Sold 1 ${livestock.name} for ${price} metal!`, 'success');
+    AudioManager.playSFX('sfx-success', 0.5);
+
+    updateTribalLivestockTrade();
+    updateLivestockPanel();
 }
 
 function updateRecruitButtonText() {
@@ -6213,6 +6995,7 @@ function updateUI() {
     document.getElementById('tribal-status').textContent = `Status: ${statusText}`;
 
     updateTribalRelation();
+    updateTribalLivestockTrade();
     updateSpaceportPanel();
     updateRecruitButtonText();
     updateRoadButtonText();
@@ -6381,3 +7164,25 @@ function updateUI() {
             }
         }
     });
+
+    document.querySelectorAll('.panel-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            const tabName = tab.getAttribute('data-tab');
+            switchTab(tabName);
+        });
+    });
+
+    document.getElementById('hire-herders-btn').onclick = () => {
+        if (!game.selectedCity || game.selectedType !== 'city') return;
+
+        if (!hasResources({ food: 100, metal: 50, energy: 0 })) {
+            addMessage('Not enough resources for herders!', 'warning');
+            return;
+        }
+
+        spendResources({ food: 100, metal: 50, energy: 0 });
+        game.selectedCity.hasHerders = true;
+        addMessage(`Hired herders in ${game.selectedCity.name}!`, 'success');
+        AudioManager.playSFX('sfx-success', 0.6);
+        updateLivestockPanel();
+    };
