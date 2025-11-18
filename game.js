@@ -244,6 +244,65 @@ const WEATHER_EVENTS = [
     { name: '❄️ Frost', effect: 'slow', description: 'Everything slows down' }
 ];
 
+const CITIZEN_REQUESTS = [
+    {
+        id: 'food_aid',
+        text: 'Citizens are hungry and request emergency food supplies.',
+        icon: '🍞',
+        accept: { cost: { food: 100, metal: 0, energy: 0 }, happiness: 8, message: 'Citizens fed and grateful' },
+        decline: { happiness: -5, message: 'Citizens disappointed by lack of aid' }
+    },
+    {
+        id: 'festival',
+        text: 'Citizens want to hold a harvest festival to boost morale.',
+        icon: '🎉',
+        accept: { cost: { food: 80, metal: 50, energy: 30 }, happiness: 12, message: 'Festival was a great success!' },
+        decline: { happiness: -3, message: 'Citizens sad there was no festival' }
+    },
+    {
+        id: 'monument',
+        text: 'Citizens propose building a small monument to honor fallen heroes.',
+        icon: '🗿',
+        accept: { cost: { food: 50, metal: 150, energy: 50 }, happiness: 10, message: 'Monument inspires the people' },
+        decline: { happiness: -4, message: 'Heroes feel forgotten' }
+    },
+    {
+        id: 'livestock_request',
+        text: 'Farmers request livestock to improve food production.',
+        icon: '🐄',
+        accept: { cost: { food: 60, metal: 40, energy: 20 }, livestock: true, happiness: 6, message: 'Farmers received livestock' },
+        decline: { happiness: -2, message: 'Farmers disappointed' }
+    },
+    {
+        id: 'workshop',
+        text: 'Craftsmen want better tools and workshops.',
+        icon: '🔨',
+        accept: { cost: { food: 40, metal: 200, energy: 100 }, happiness: 9, message: 'Productivity increased!' },
+        decline: { happiness: -4, message: 'Craftsmen work with old tools' }
+    },
+    {
+        id: 'school',
+        text: 'Parents ask for a school to educate their children.',
+        icon: '📚',
+        accept: { cost: { food: 100, metal: 100, energy: 80 }, happiness: 11, message: 'Children now educated' },
+        decline: { happiness: -6, message: 'Parents worry about their children\'s future' }
+    },
+    {
+        id: 'medical',
+        text: 'Healers need supplies to treat the sick.',
+        icon: '💊',
+        accept: { cost: { food: 70, metal: 30, energy: 50 }, happiness: 10, message: 'Healthcare improved' },
+        decline: { happiness: -7, message: 'The sick suffer without treatment' }
+    },
+    {
+        id: 'entertainment',
+        text: 'Citizens are bored and want entertainment options.',
+        icon: '🎭',
+        accept: { cost: { food: 90, metal: 120, energy: 60 }, happiness: 8, message: 'Entertainment brings joy' },
+        decline: { happiness: -3, message: 'Citizens remain bored and restless' }
+    }
+];
+
 const RESOURCE_TYPES = {
 food: { name: 'Food', icon: '🌾', color: '#90EE90' },
 metal: { name: 'Metal', icon: '⚙️', color: '#C0C0C0' },
@@ -319,6 +378,9 @@ const game = {
     wildHerds: [],
     livestockMarket: { cattle: 0, sheep: 0, chickens: 0, horses: 0 },
     researchPoints: 0,
+    currentRequest: null,
+    requestCooldown: 0,
+    nextRequestTime: 300,
     cities: [], roads: [], features: [], tribalCities: [], tribalRoads: [],
     habitableZone: { left: 35, width: 30 }, zoneShiftSpeed: -0.5,
     selectedCity: null, selectedType: null, placingCity: false, buildingRoad: false, roadStartCity: null,
@@ -1422,6 +1484,9 @@ function startGame() {
         spaceportYearStarted: 0,
         livestock: { cattle: 0, sheep: 0, chickens: 0, horses: 0 },
         wonderLocations: [],
+        currentRequest: null,
+        requestCooldown: 0,
+        nextRequestTime: 300,
         placingSpaceport: false, spaceportX: 0, spaceportY: 0,
         resources: { food: 500, metal: 400, energy: 250 }, year: 0,
         gatherCooldown: 0, tribalTradeCooldown: 0, tribalReputation: 50,
@@ -1562,6 +1627,128 @@ function startGame() {
     }, 2000);
 
     updateMinimap();
+}
+
+function updateCitizenRequests() {
+    if (game.cities.length === 0) return;
+
+    if (game.requestCooldown > 0) {
+        game.requestCooldown--;
+        return;
+    }
+
+    if (!game.currentRequest && game.year >= game.nextRequestTime) {
+        const availableRequests = CITIZEN_REQUESTS.filter(req => {
+            if (req.id === 'livestock_request') {
+                return game.livestockMarket.cattle > 0 || game.livestockMarket.sheep > 0;
+            }
+            return true;
+        });
+
+        const randomRequest = availableRequests[Math.floor(Math.random() * availableRequests.length)];
+        game.currentRequest = { ...randomRequest };
+        game.nextRequestTime = game.year + 200 + Math.random() * 300;
+
+        updateRequestDisplay();
+        addMessage('📋 New citizen request!', 'info');
+        AudioManager.playSFX('sfx-button-click', 0.4);
+    }
+}
+
+function updateRequestDisplay() {
+    const container = document.getElementById('active-request-container');
+    const noRequest = document.getElementById('no-request');
+
+    if (!game.currentRequest) {
+        container.style.display = 'none';
+        noRequest.style.display = 'block';
+        return;
+    }
+
+    container.style.display = 'block';
+    noRequest.style.display = 'none';
+
+    const req = game.currentRequest;
+    const canAfford = hasResources(req.accept.cost);
+
+    container.innerHTML = `
+        <div style="background: rgba(147, 112, 219, 0.1); border: 2px solid #9370DB; border-radius: 10px; padding: 15px;">
+            <div style="font-size: 40px; text-align: center; margin-bottom: 10px;">${req.icon}</div>
+            <p style="font-size: 11px; margin-bottom: 15px; line-height: 1.4;">${req.text}</p>
+
+            <div style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 5px; margin-bottom: 10px;">
+                <p style="font-size: 10px; color: #4CAF50; margin-bottom: 5px;"><strong>Accept:</strong></p>
+                <p style="font-size: 9px;">Cost: ${req.accept.cost.food}F, ${req.accept.cost.metal}M, ${req.accept.cost.energy}E</p>
+                <p style="font-size: 9px; color: #00ff00;">+${req.accept.happiness} happiness to all cities</p>
+            </div>
+
+            <div style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 5px; margin-bottom: 10px;">
+                <p style="font-size: 10px; color: #ff4400; margin-bottom: 5px;"><strong>Decline:</strong></p>
+                <p style="font-size: 9px; color: #ff4400;">${req.decline.happiness} happiness to all cities</p>
+            </div>
+
+            <div style="display: flex; gap: 8px;">
+                <button class="action-btn" onclick="acceptRequest()" ${!canAfford ? 'disabled' : ''} style="flex: 1; background: rgba(76, 175, 80, 0.3); border-color: #4CAF50;">
+                    Accept
+                </button>
+                <button class="action-btn" onclick="declineRequest()" style="flex: 1; background: rgba(255, 68, 0, 0.3); border-color: #ff4400;">
+                    Decline
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+function acceptRequest() {
+    if (!game.currentRequest) return;
+
+    const req = game.currentRequest;
+    if (!hasResources(req.accept.cost)) {
+        addMessage('Not enough resources!', 'warning');
+        return;
+    }
+
+    spendResources(req.accept.cost);
+
+    game.cities.forEach(city => {
+        if (!city.isRebel) {
+            city.happiness = Math.min(100, city.happiness + req.accept.happiness);
+            updateCityDisplay(city);
+        }
+    });
+
+    if (req.accept.livestock) {
+        const types = ['cattle', 'sheep', 'chickens'];
+        const randomType = types[Math.floor(Math.random() * types.length)];
+        game.livestockMarket[randomType] = (game.livestockMarket[randomType] || 0) + 2;
+    }
+
+    addMessage(`✓ ${req.accept.message}`, 'success');
+    AudioManager.playSFX('sfx-success', 0.6);
+
+    game.currentRequest = null;
+    game.requestCooldown = 150;
+    updateRequestDisplay();
+}
+
+function declineRequest() {
+    if (!game.currentRequest) return;
+
+    const req = game.currentRequest;
+
+    game.cities.forEach(city => {
+        if (!city.isRebel) {
+            city.happiness = Math.max(0, city.happiness + req.decline.happiness);
+            updateCityDisplay(city);
+        }
+    });
+
+    addMessage(`✗ ${req.decline.message}`, 'warning');
+    AudioManager.playSFX('sfx-error', 0.4);
+
+    game.currentRequest = null;
+    game.requestCooldown = 150;
+    updateRequestDisplay();
 }
 
 function getDistanceMultiplier(x, y) {
@@ -2024,20 +2211,23 @@ function update() {
     if (game.ddrActive) {
     const canReinforce = canCallReinforcements();
     const reinforceBtn = document.getElementById('reinforcement-btn');
-    if (reinforceBtn) {
-    reinforceBtn.disabled = !canReinforce;
-    const totalRes = game.resources.food + game.resources.metal + game.resources.energy;
-    if (!canReinforce && totalRes < 300) {
-        reinforceBtn.textContent = 'Need 300 Resources';
-    } else if (!canReinforce) {
-        reinforceBtn.textContent = 'No Supply Lines';
-    } else {
-        reinforceBtn.textContent = 'Call Reinforcements (300 res)';
-    }
-    }
+        if (reinforceBtn) {
+        reinforceBtn.disabled = !canReinforce;
+        const totalRes = game.resources.food + game.resources.metal + game.resources.energy;
+            if (!canReinforce && totalRes < 300) {
+                reinforceBtn.textContent = 'Need 300 Resources';
+            } else if (!canReinforce) {
+                reinforceBtn.textContent = 'No Supply Lines';
+            } else {
+                reinforceBtn.textContent = 'Call Reinforcements (300 res)';
+            }
+        }
     }
     if (Math.floor(game.year * 10) % 5 === 0) {
         updateMinimap();
+    }
+    if (Math.floor(game.year * 10) % 50 === 0) {
+        updateCitizenRequests();
     }
 
     updateUI();
@@ -3021,6 +3211,9 @@ function switchTab(tabName) {
 
     if (tabName === 'livestock') {
         updateLivestockPanel();
+    }
+    if (tabName === 'requests') {
+        updateRequestDisplay();
     }
 }
 
