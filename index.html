@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
-    <title>Star Map - V1.3.8</title>
+    <title>Star Map - V1.3.9</title>
     <link rel="icon" type="image/png" href="images/icon.png">
     <link href="style.css" rel="stylesheet"/>
 </head>
@@ -251,7 +251,23 @@
 
     <div id="main-game">
         <div id="planet-view">
+            <div class="region-boundary" data-region="northern"></div>
+            <div class="region-boundary" data-region="peaks"></div>
+            <div class="region-boundary" data-region="marshes"></div>
+            <div class="region-boundary" data-region="waste"></div>
+            <div class="region-boundary" data-region="shadow"></div>
+            <div class="region-boundary" data-region="mistwood"></div>
+            <div class="region-boundary" data-region="plains"></div>
+            <div class="region-boundary" data-region="wilds"></div>
             <div class="terrain-layer" id="terrain-container"></div>
+            <div class="region-label" data-region="northern">Northern Reaches</div>
+            <div class="region-label" data-region="peaks">The Shattered Peaks</div>
+            <div class="region-label" data-region="marshes">Sunken Marshes</div>
+            <div class="region-label" data-region="waste">The Crimson Waste</div>
+            <div class="region-label" data-region="shadow">The Shadowlands</div>
+            <div class="region-label" data-region="mistwood">Mistwood Vale</div>
+            <div class="region-label" data-region="plains">Ironhold Plains</div>
+            <div class="region-label" data-region="wilds">The Deep Wilds</div>
             <div id="habitable-zone"></div>
             <div class="city-radius" id="placement-radius"></div>
             <div class="placement-preview" id="placement-preview">

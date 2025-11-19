@@ -1,4 +1,5 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
+
 body {
     font-family: 'Georgia', 'Times New Roman', serif;
     background: #f4e8d0;
@@ -145,8 +146,12 @@ body {
     grid-row: 2;
     position: relative;
     overflow: hidden;
-    background: #f4e8d0;
-    border: 4px double #8b6f47;
+    background: #f0e6d2;
+    border: 8px solid #8b6f47;
+    border-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><rect fill="%238b6f47" width="32" height="32"/><circle cx="4" cy="4" r="2" fill="%23d4c0a0"/><circle cx="16" cy="4" r="2" fill="%23d4c0a0"/><circle cx="28" cy="4" r="2" fill="%23d4c0a0"/><circle cx="4" cy="16" r="2" fill="%23d4c0a0"/><circle cx="28" cy="16" r="2" fill="%23d4c0a0"/><circle cx="4" cy="28" r="2" fill="%23d4c0a0"/><circle cx="16" cy="28" r="2" fill="%23d4c0a0"/><circle cx="28" cy="28" r="2" fill="%23d4c0a0"/></svg>') 16 stretch;
+    box-shadow:
+        inset 0 0 30px rgba(139, 111, 71, 0.2),
+        0 0 20px rgba(139, 111, 71, 0.15);
 }
 
 #planet-view {
@@ -155,12 +160,22 @@ body {
     position: absolute;
     cursor: grab;
     background:
-        repeating-linear-gradient(90deg, transparent, transparent 49px, rgba(139, 111, 71, 0.15) 49px, rgba(139, 111, 71, 0.15) 50px),
-        repeating-linear-gradient(0deg, transparent, transparent 49px, rgba(139, 111, 71, 0.15) 49px, rgba(139, 111, 71, 0.15) 50px),
-        #e8dcc8;
+        radial-gradient(ellipse at 20% 30%, rgba(139, 69, 19, 0.08), transparent 40%),
+        radial-gradient(ellipse at 75% 60%, rgba(139, 69, 19, 0.06), transparent 50%),
+        radial-gradient(ellipse at 85% 20%, rgba(160, 82, 45, 0.05), transparent 45%),
+        repeating-linear-gradient(90deg, transparent, transparent 49px, rgba(139, 111, 71, 0.08) 49px, rgba(139, 111, 71, 0.08) 50px),
+        repeating-linear-gradient(0deg, transparent, transparent 49px, rgba(139, 111, 71, 0.08) 49px, rgba(139, 111, 71, 0.08) 50px),
+        repeating-linear-gradient(45deg, transparent 0px, transparent 2px, rgba(180, 150, 120, 0.03) 2px, rgba(180, 150, 120, 0.03) 4px),
+        linear-gradient(135deg, rgba(210, 180, 140, 0.2) 0%, rgba(230, 215, 195, 0.1) 50%, rgba(210, 180, 140, 0.15) 100%),
+        #f0e6d2;
     background-size:
+        100% 100%,
+        100% 100%,
+        100% 100%,
         50px 50px,
         50px 50px,
+        100% 100%,
+        100% 100%,
         100% 100%;
     transform-origin: top left;
     transition: transform 0.1s ease-out;
@@ -452,25 +467,30 @@ body {
 }
 
 .mountain {
-    position: absolute; width: 0; height: 0; z-index: 2;
-    border-left: 30px solid transparent;
-    border-right: 30px solid transparent;
-    border-bottom: 50px solid rgba(100, 100, 100, 0.6);
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    position: absolute;
+    width: 0;
+    height: 0;
+    z-index: 2;
+    border-left: 18px solid transparent;
+    border-right: 18px solid transparent;
+    border-bottom: 32px solid rgba(100, 100, 100, 0.7);
+    filter: drop-shadow(0 1px 3px rgba(0,0,0,0.4));
 }
+
 .mountain::before {
-    content: ''; position: absolute; width: 0; height: 0;
-    border-left: 20px solid transparent;
-    border-right: 20px solid transparent;
-    border-bottom: 35px solid rgba(150, 150, 150, 0.4);
-    left: -35px; top: 15px;
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-left: 12px solid transparent;
+    border-right: 12px solid transparent;
+    border-bottom: 22px solid rgba(150, 150, 150, 0.5);
+    left: -22px;
+    top: 8px;
 }
+
 .mountain::after {
-    content: ''; position: absolute; width: 0; height: 0;
-    border-left: 15px solid transparent;
-    border-right: 15px solid transparent;
-    border-bottom: 25px solid rgba(80, 80, 80, 0.5);
-    left: 5px; top: 25px;
+    display: none;
 }
 
 .ice-mountain {
@@ -502,11 +522,15 @@ body {
 }
 
 .lake-feature {
-    position: absolute; width: 40px; height: 30px;
-    background: radial-gradient(ellipse, rgba(50, 150, 255, 0.6), rgba(30, 100, 200, 0.4));
-    border-radius: 50%; z-index: 3;
-    box-shadow: inset 0 -5px 10px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(50, 150, 255, 0.4);
-    animation: waterShimmer 3s infinite ease-in-out;
+    position: absolute;
+    width: 35px;
+    height: 28px;
+    background: radial-gradient(ellipse, rgba(50, 150, 255, 0.7), rgba(30, 100, 200, 0.5));
+    border-radius: 50%;
+    z-index: 3;
+    border: 1px solid rgba(30, 100, 200, 0.6);
+    box-shadow: none;
+    animation: none;
 }
 @keyframes waterShimmer {
     0%, 100% { filter: brightness(1); }
@@ -514,41 +538,52 @@ body {
 }
 
 .forest-feature {
-    position: absolute; width: 50px; height: 50px; z-index: 3;
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    z-index: 3;
 }
+
 .tree {
-    position: absolute; width: 0; height: 0;
-    border-left: 8px solid transparent;
-    border-right: 8px solid transparent;
-    border-bottom: 20px solid rgba(34, 139, 34, 0.7);
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-bottom: 14px solid rgba(34, 139, 34, 0.8);
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
 }
+
 .tree::after {
-    content: ''; position: absolute;
-    width: 4px; height: 10px;
-    background: rgba(101, 67, 33, 0.8);
-    left: -2px; top: 20px;
+    display: none;
 }
 
 .canyon-feature {
-    position: absolute; width: 60px; height: 40px; z-index: 3;
+    position: absolute;
+    width: 55px;
+    height: 35px;
+    z-index: 3;
     background: linear-gradient(180deg,
-        rgba(180, 100, 50, 0.5) 0%,
-        rgba(140, 80, 40, 0.6) 50%,
-        rgba(100, 60, 30, 0.7) 100%);
-    border-radius: 5px;
-    box-shadow: inset 0 5px 15px rgba(0, 0, 0, 0.4), 0 2px 5px rgba(0, 0, 0, 0.3);
+        rgba(180, 100, 50, 0.6) 0%,
+        rgba(140, 80, 40, 0.7) 50%,
+        rgba(100, 60, 30, 0.8) 100%);
+    clip-path: polygon(0 40%, 100% 40%, 95% 100%, 5% 100%);
+    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.4);
+    border: none;
 }
+
 .canyon-feature::before {
-    content: ''; position: absolute;
-    width: 100%; height: 3px;
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 2px;
     background: rgba(0, 0, 0, 0.3);
-    top: 30%; left: 0;
+    top: 50%;
+    left: 0;
 }
+
 .canyon-feature::after {
-    content: ''; position: absolute;
-    width: 100%; height: 3px;
-    background: rgba(0, 0, 0, 0.3);
-    top: 60%; left: 0;
+    display: none;
 }
 
 .ice-feature {
@@ -567,34 +602,46 @@ body {
 }
 
 .desert-feature {
-    position: absolute; width: 50px; height: 35px; z-index: 3;
-    background: radial-gradient(ellipse,
-        rgba(255, 200, 100, 0.4),
-        rgba(255, 180, 80, 0.3));
+    position: absolute;
+    width: 45px;
+    height: 40px;
+    z-index: 3;
+    background: radial-gradient(ellipse, rgba(255, 200, 100, 0.5), rgba(255, 180, 80, 0.3));
     border-radius: 50%;
-    box-shadow: 0 3px 10px rgba(255, 150, 50, 0.3);
-}
-.desert-feature::before {
-    content: ''; position: absolute;
-    width: 30px; height: 20px;
-    background: radial-gradient(ellipse, rgba(255, 180, 80, 0.3), transparent);
-    border-radius: 50%;
-    top: -10px; left: 10px;
+    box-shadow: none;
 }
 
-.plains-feature {
-    position: absolute; width: 55px; height: 40px; z-index: 3;
-    background: linear-gradient(180deg,
-        rgba(150, 200, 100, 0.4),
-        rgba(120, 180, 80, 0.5));
+.desert-feature::before {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: radial-gradient(ellipse, rgba(255, 180, 80, 0.4), transparent);
     border-radius: 50%;
-    box-shadow: inset 0 2px 8px rgba(100, 150, 70, 0.3);
+    top: 5px;
+    left: 15px;
+    box-shadow:
+        25px 8px 0 -4px rgba(255, 180, 80, 0.35),
+        15px 20px 0 -6px rgba(255, 180, 80, 0.3);
 }
+.plains-feature {
+    position: absolute;
+    width: 50px;
+    height: 40px;
+    z-index: 3;
+    background: radial-gradient(ellipse, rgba(150, 200, 100, 0.5), rgba(120, 180, 80, 0.4));
+    border-radius: 50%;
+    box-shadow: none;
+}
+
 .plains-feature::after {
-    content: ''; position: absolute;
-    width: 80%; height: 3px;
-    background: rgba(100, 150, 70, 0.4);
-    bottom: 30%; left: 10%;
+    content: '';
+    position: absolute;
+    width: 70%;
+    height: 2px;
+    background: rgba(100, 150, 70, 0.5);
+    bottom: 35%;
+    left: 15%;
 }
 
 .grove-feature {
@@ -952,24 +999,25 @@ body {
 
 .building-hut {
     position: absolute;
-    width: 8px;
-    height: 8px;
-    background: linear-gradient(135deg, #8B4513, #654321);
+    width: 10px;
+    height: 10px;
+    background: #8B4513;
     border-radius: 50% 50% 0 0;
     transform: translate(-50%, -50%);
-    box-shadow: none;
+    border: 1px solid #654321;
 }
 
 .building-hut::before {
     content: '';
     position: absolute;
-    bottom: -2px;
+    top: -3px;
     left: 50%;
     transform: translateX(-50%);
-    width: 6px;
-    height: 3px;
-    background: #3d2817;
-    border-radius: 0 0 2px 2px;
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-bottom: 4px solid #654321;
 }
 
 .building-hut::after {
@@ -987,12 +1035,11 @@ body {
 
 .building-house {
     position: absolute;
-    width: 6px;
+    width: 8px;
     height: 8px;
-    background: linear-gradient(180deg, #B8860B, #8B6914);
+    background: #B8860B;
     transform: translate(-50%, -50%);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
-    border-radius: 1px;
+    border: 1px solid #8B6914;
 }
 
 .building-house::before {
@@ -1003,35 +1050,22 @@ body {
     transform: translateX(-50%);
     width: 0;
     height: 0;
-    border-left: 4px solid transparent;
-    border-right: 4px solid transparent;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
     border-bottom: 4px solid #8B4513;
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
 }
 
 .building-house::after {
-    content: '';
-    position: absolute;
-    top: 2px;
-    left: 1px;
-    width: 2px;
-    height: 2px;
-    background: rgba(255, 215, 0, 0.6);
-    box-shadow:
-        0 3px 0 rgba(255, 215, 0, 0.6),
-        3px 0 0 rgba(255, 215, 0, 0.6),
-        3px 3px 0 rgba(255, 215, 0, 0.6);
+    display: none;
 }
 
 .building-skyscraper {
     position: absolute;
-    width: 4px;
+    width: 5px;
+    height: 20px;
     background: linear-gradient(180deg, #4A5568, #2D3748);
     transform: translate(-50%, -50%);
-    box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.1),
-        inset 1px 0 0 rgba(255, 255, 255, 0.05);
-    border-radius: 1px 1px 0 0;
+    border: 1px solid #1a1a1a;
 }
 
 .skyscraper-windows {
@@ -1043,31 +1077,18 @@ body {
     background: repeating-linear-gradient(
         180deg,
         transparent 0px,
-        transparent 1px,
-        rgba(255, 215, 0, 0.4) 1px,
-        rgba(255, 215, 0, 0.4) 2px
+        transparent 2px,
+        rgba(255, 215, 0, 0.5) 2px,
+        rgba(255, 215, 0, 0.5) 3px
     );
 }
 
 .building-skyscraper::before {
-    content: '';
-    position: absolute;
-    top: -2px;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: linear-gradient(180deg, #718096, #4A5568);
-    border-radius: 1px 1px 0 0;
+    display: none;
 }
 
 .building-skyscraper::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 1px;
-    height: 100%;
-    background: rgba(255, 255, 255, 0.1);
+    display: none;
 }
 
 .specialization-military-fort {
@@ -3823,4 +3844,172 @@ button.active {
     color: #8b4f2f;
     margin-bottom: 15px;
     text-shadow: 1px 1px 2px rgba(139, 111, 71, 0.3);
+}
+
+.region-label {
+    position: absolute;
+    font-family: 'Georgia', serif;
+    font-size: 18px;
+    font-weight: bold;
+    color: rgba(139, 111, 71, 0.4);
+    text-shadow:
+        2px 2px 4px rgba(0, 0, 0, 0.3),
+        -1px -1px 2px rgba(255, 255, 255, 0.2);
+    pointer-events: none;
+    z-index: 12;
+    transform: translate(-50%, -50%);
+    white-space: nowrap;
+    letter-spacing: 2px;
+    opacity: 0.6;
+    transition: opacity 0.3s;
+}
+
+.region-label:hover {
+    opacity: 0.9;
+}
+
+.region-label[data-region="northern"] {
+    top: 15%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-5deg);
+}
+
+.region-label[data-region="peaks"] {
+    top: 20%;
+    left: 75%;
+    transform: translate(-50%, -50%) rotate(8deg);
+}
+
+.region-label[data-region="marshes"] {
+    top: 50%;
+    left: 85%;
+    transform: translate(-50%, -50%) rotate(-3deg);
+}
+
+.region-label[data-region="waste"] {
+    top: 75%;
+    left: 75%;
+    transform: translate(-50%, -50%) rotate(6deg);
+}
+
+.region-label[data-region="shadow"] {
+    top: 85%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-4deg);
+}
+
+.region-label[data-region="mistwood"] {
+    top: 50%;
+    left: 15%;
+    transform: translate(-50%, -50%) rotate(7deg);
+}
+
+.region-label[data-region="plains"] {
+    top: 25%;
+    left: 25%;
+    transform: translate(-50%, -50%) rotate(-6deg);
+}
+
+.region-label[data-region="wilds"] {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(2deg);
+}
+
+.region-boundary {
+    position: absolute;
+    pointer-events: none;
+    z-index: 11;
+    opacity: 0.12;
+    mix-blend-mode: multiply;
+    border: 2px dashed rgba(139, 111, 71, 0.4);
+    box-shadow: inset 0 0 15px rgba(139, 111, 71, 0.2);
+}
+
+.region-boundary[data-region="northern"] {
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 25%;
+    background: linear-gradient(180deg, rgba(100, 149, 237, 0.3), transparent);
+    border-bottom: 2px dashed rgba(100, 149, 237, 0.5);
+    border-top: none;
+    border-left: none;
+    border-right: none;
+}
+
+.region-boundary[data-region="peaks"] {
+    top: 0;
+    right: 0;
+    width: 30%;
+    height: 35%;
+    background: radial-gradient(ellipse at right top, rgba(160, 82, 45, 0.4), transparent);
+    border: 2px dashed rgba(160, 82, 45, 0.5);
+    border-radius: 0 0 0 50px;
+}
+
+.region-boundary[data-region="marshes"] {
+    top: 25%;
+    right: 0;
+    width: 25%;
+    height: 50%;
+    background: linear-gradient(270deg, rgba(107, 142, 35, 0.3), transparent);
+    border-left: 2px dashed rgba(107, 142, 35, 0.5);
+    border-top: none;
+    border-bottom: none;
+    border-right: none;
+}
+
+.region-boundary[data-region="waste"] {
+    bottom: 0;
+    right: 0;
+    width: 35%;
+    height: 30%;
+    background: radial-gradient(ellipse at right bottom, rgba(220, 20, 60, 0.3), transparent);
+    border: 2px dashed rgba(220, 20, 60, 0.5);
+    border-radius: 50px 0 0 0;
+}
+
+.region-boundary[data-region="shadow"] {
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 20%;
+    background: linear-gradient(0deg, rgba(70, 70, 70, 0.3), transparent);
+    border-top: 2px dashed rgba(70, 70, 70, 0.5);
+    border-bottom: none;
+    border-left: none;
+    border-right: none;
+}
+
+.region-boundary[data-region="mistwood"] {
+    top: 20%;
+    left: 0;
+    width: 20%;
+    height: 60%;
+    background: linear-gradient(90deg, rgba(34, 139, 34, 0.3), transparent);
+    border-right: 2px dashed rgba(34, 139, 34, 0.5);
+    border-top: none;
+    border-bottom: none;
+    border-left: none;
+}
+
+.region-boundary[data-region="plains"] {
+    top: 0;
+    left: 20%;
+    width: 30%;
+    height: 30%;
+    background: radial-gradient(ellipse at left top, rgba(210, 180, 140, 0.3), transparent);
+    border: 2px dashed rgba(210, 180, 140, 0.5);
+    border-radius: 0 0 50px 0;
+}
+
+.region-boundary[data-region="wilds"] {
+    top: 30%;
+    left: 30%;
+    width: 40%;
+    height: 40%;
+    background: radial-gradient(ellipse, rgba(139, 111, 71, 0.25), transparent);
+    border: 2px dashed rgba(139, 111, 71, 0.5);
+    border-radius: 30px;
 }
