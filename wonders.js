@@ -110,8 +110,8 @@ const WonderSystem = {
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.95);
-            border: 3px solid #FFD700;
+            background: linear-gradient(180deg, #f5e6d3 0%, #e8d4b0 50%, #d4c0a0 100%);
+            border: 4px double #8b6f47;
             border-radius: 15px;
             padding: 30px;
             max-width: 800px;
@@ -119,6 +119,7 @@ const WonderSystem = {
             overflow-y: auto;
             z-index: 9999;
             display: none;
+            box-shadow: inset 0 0 40px rgba(139, 111, 71, 0.3), 0 10px 50px rgba(0, 0, 0, 0.6);
         `;
         panel.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -161,11 +162,12 @@ const WonderSystem = {
 
             const item = document.createElement('div');
             item.style.cssText = `
-                background: rgba(255, 255, 255, 0.05);
-                border: 2px solid ${wonder.color};
+                background: linear-gradient(to bottom, #f5e6d3, #e8d4b0);
+                border: 3px double #8b6f47;
                 border-radius: 10px;
                 padding: 15px;
                 margin-bottom: 15px;
+                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3), inset 0 0 20px rgba(139, 111, 71, 0.1);
                 ${isBuilt ? 'opacity: 0.6;' : ''}
             `;
 
